@@ -36,6 +36,7 @@ class Position
 public:
 	/* Constructor with a coordinate and depth */
 	Position(Coord p_coord, int p_depth);
+	Position(int x_coord, int y_coord, int p_depth);
 	Position();
 
 	/* Operator overloads */

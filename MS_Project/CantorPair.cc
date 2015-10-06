@@ -14,6 +14,6 @@ int CantorPair::get_int(Position* pos)
 	int depth = pos->get_depth();
 
 	/* Get the first cantor pair from the two coordinates */
-	int first_cantor = (1 / 2) * (xcoord + ycoord) * (xcoord + ycoord + 1) + ycoord;
-	return (1 / 2) * (first_cantor + depth) * (first_cantor + depth + 1) + depth;
+	int first_cantor = (((xcoord + ycoord) * (xcoord + ycoord + 1)) / 2) + ycoord;
+	return (((first_cantor + depth) * (first_cantor + depth + 1)) / 2) + depth;
 }

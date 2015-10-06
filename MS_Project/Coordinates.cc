@@ -44,6 +44,19 @@ Position::Position(Coord p_coord, int p_depth)
 	depth = p_depth;
 }
 
+
+/*
+* Constructor with two coordinates as ints and depth
+* @param x_coord: X coordinate
+* @param y_coord: Y coordinate
+* @param p_depth: Depth of the coordinate in the agent's path
+*/
+Position::Position(int x_coord, int y_coord, int p_depth)
+{
+	coord = Coord(x_coord,y_coord);
+	depth = p_depth;
+}
+
 /* Default constructor */
 Position::Position()
 {
