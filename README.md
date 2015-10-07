@@ -1,1 +1,1 @@
-# MS_Project
+This project is a Multi-Agent Pathfinding (MAPF) program that guarantees optimal search paths for each agent. It is designed to test my new algorithm, Frontier Descendant Removal Conflict Based Search (FDR-CBS) and compare its efficiency relative to the original Conflict Based Search (CBS). Further additions may include incorporating parallelization or comparing it to more advanced versions of CBS which have various improvements such as Meta-Agent Conflict Based Search (MA-CBS).

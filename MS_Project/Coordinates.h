@@ -9,6 +9,7 @@ class Coord
 public:
 	/* Declare constructors */
 	Coord(int x, int y);
+	Coord(Coord* copy_coord);
 	Coord();
 
 	/* Operator overloads */

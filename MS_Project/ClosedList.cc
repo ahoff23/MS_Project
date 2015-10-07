@@ -1,6 +1,6 @@
 #include "ClosedList.h"
 #include "Coordinates.h"
-#include "ClosedNode.h"
+#include "AStarNode.h"
 #include "CantorPair.h"
 
 /* 
@@ -8,7 +8,7 @@
 */
 ClosedList::ClosedList()
 {
-	list = std::unordered_map<int, ClosedNode*>();
+	list = std::unordered_map<int, AStarNode*>();
 	parent = nullptr;
 }
 
@@ -19,7 +19,7 @@ ClosedList::ClosedList()
 */
 ClosedList::ClosedList(ClosedList* p_parent)
 {
-	list = std::unordered_map<int, ClosedNode*>();
+	list = std::unordered_map<int, AStarNode*>();
 	parent = p_parent;
 }
 
@@ -65,19 +65,19 @@ bool ClosedList::check_duplicate(int hash)
 }
 
 /* 
-* Add a ClosedNode to the ClosedList
-* @param add_node: The ClosedNode to add
+* Add a AStarNode to the ClosedList
+* @param add_node: The AStarNode to add
 */
-void ClosedList::add_pos(ClosedNode* add_node)
+void ClosedList::add_pos(AStarNode* add_node)
 {
 	/* Make sure the add_node pointer is allocated */
 	if (add_node == nullptr)
 		return;
 
-	/* Get the hash corresponding to this ClosedNode */
+	/* Get the hash corresponding to this AStarNode */
 	int hash = CantorPair::get_int(add_node->get_pos());
 
-	/* Place the ClosedNode in the hash table */
+	/* Place the AStarNode in the hash table */
 	list.emplace(hash, add_node);
 }
 

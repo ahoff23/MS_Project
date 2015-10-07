@@ -11,6 +11,16 @@ Coord::Coord(int x, int y)
 	ycoord = y;
 }
 
+/*
+* Coord copy constructor
+* @param copy_coord: The coordinate to copy
+*/
+Coord::Coord(Coord* copy_coord)
+{
+	xcoord = copy_coord->get_xcoord();
+	ycoord = copy_coord->get_ycoord();
+}
+
 /* 
 * Default constructor for a Coord object
 */

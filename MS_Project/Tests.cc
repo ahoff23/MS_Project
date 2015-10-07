@@ -1,11 +1,13 @@
 #include <iostream>
+#include <fstream>
 
 #include "Tests.h"
 #include "Coordinates.h"
 #include "CantorPair.h"
-#include "OpenNode.h"
-#include "ClosedNode.h"
+#include "AStarNode.h"
 #include "ClosedList.h"
+#include "World.h"
+#include "Exceptions.h"
 
 /* 
 * Runs all tests 
@@ -19,9 +21,9 @@ bool Tests::run_tests()
 		return false;
 	if (!cantor_pair_tests())
 		return false;
-	if (!open_node_tests())
-		return false;
 	if (!closed_list_tests())
+		return false;
+	if (!world_tests())
 		return false;
 
 	std::cout << "All tests passed." << std::endl;
@@ -157,29 +159,6 @@ bool Tests::cantor_pair_tests()
 }
 
 /*
-* Test OpenNode functions
-* @return true if all tests pass or print an error and return false if one test fails.
-*/
-bool Tests::open_node_tests()
-{
-	/* Test the comparison operator */
-	int xcoord = 1;
-	int ycoord = 2;
-	int depth = 3;
-	Position pos = Position(xcoord, ycoord, depth);
-	OpenNode node_1 = OpenNode(nullptr, pos, depth);
-	OpenNode node_2 = OpenNode(nullptr, pos, depth + 1);
-
-	if (node_1 < node_2 || node_1 < node_1 || node_2 < node_2)
-	{
-		std::cout << "FAILED: OpenNode < operator failed." << std::endl;
-		return false;
-	}
-
-	return true;
-}
-
-/*
 * Test ClosedList functions
 * @return true if all tests pass or print an error and return false if one test fails.
 */
@@ -190,11 +169,11 @@ bool Tests::closed_list_tests()
 	int ycoord = 2;
 	int depth = 3;
 	Position pos_1 = Position(xcoord, ycoord, depth);
-	ClosedNode add_node_1 = ClosedNode(pos_1, nullptr, 1);
+	AStarNode* add_node_1 = new AStarNode(pos_1, nullptr, 1);
 
 	/* Add a ClosedNode to the list */
 	ClosedList list_1 = ClosedList();
-	list_1.add_pos(&add_node_1);
+	list_1.add_pos(add_node_1);
 
 	/* Check if a duplicate of the ClosedNode is in the list */
 	if (!list_1.check_duplicate(&pos_1))
@@ -219,8 +198,8 @@ bool Tests::closed_list_tests()
 	ClosedList list_2 = ClosedList(&list_1);
 
 	/* Add a ClosedNode to the new list */
-	ClosedNode add_node_2 = ClosedNode(pos_2, nullptr, 1);
-	list_2.add_pos(&add_node_2);
+	AStarNode* add_node_2 = new AStarNode(pos_2, nullptr, 1);
+	list_2.add_pos(add_node_2);
 
 	/* Check for a duplicate from the parent */	
 	if (!list_1.check_duplicate(&pos_1))
@@ -232,4 +211,190 @@ bool Tests::closed_list_tests()
 	}
 
 	return true;
+}
+
+/*
+* Test World functions
+* @return true if all tests pass or print an error and return false if one test fails.
+*/
+bool Tests::world_tests()
+{
+	/* Pointer to worlds being tested */
+	World* test_world;
+
+	/* Error code from an exception */
+	std::string exception_msg = "";
+
+	/* Make sure an error occurs when referencing a non-existant file */
+	try
+	{
+		test_world = new World("Worlds/fake_file.txt");
+	}
+	catch (TerminalException& ex)
+	{
+		exception_msg = ex.what();
+		
+		/* Allocate for a new test_world so the delete works later */
+		test_world = new World();
+	}
+
+	if (exception_msg == "World file could not be opened.")
+		exception_msg = "";
+	else
+	{
+		std::cout << "FAILED: Non-existant file did not generate the correct exception." << std::endl;
+		return false;
+	}
+
+	delete test_world;
+
+	/* Make sure an error is thrown when referencing an empty file */
+	char test_file[] = "Worlds/test_file.txt";
+	std::ofstream empty_file(test_file);
+
+	try
+	{
+		test_world = new World(test_file);
+	}
+	catch (TerminalException& ex)
+	{
+		exception_msg = ex.what();
+
+		/* Allocate for a new test_world so the delete works later */
+		test_world = new World();
+	}
+	if (exception_msg == "World text file must have at least one coordinate.")
+		exception_msg = "";
+	else
+	{
+		std::cout << "FAILED: Empty file did not generate the correct exception." << std::endl;
+
+		/* Remove the test file */
+		std::remove(test_file);
+
+		return false;
+	}
+	empty_file.close();
+
+	delete test_world;
+
+	/* Test incorrect file format */
+	empty_file.open(test_file);
+	empty_file << "10101 0101";
+	empty_file.close();
+
+	try
+	{
+		test_world = new World(test_file);
+	}
+	catch (TerminalException& ex)
+	{
+		exception_msg = ex.what();
+
+		/* Allocate for a new test_world so the delete works later */
+		test_world = new World();
+	}
+	if (exception_msg == "Invalid file format.")
+		exception_msg = "";
+	else
+	{
+		std::cout << exception_msg << std::endl;
+		std::cout << "FAILED: Invalid format file did not generate the correct exception." << std::endl;
+
+		/* Remove the test file */
+		std::remove(test_file);
+
+		return false;
+	}
+
+	delete test_world;
+
+	/* Create a world and make sure the check_coord function works */
+	empty_file.open(test_file);
+	empty_file << "0111100\n";
+	empty_file << "0011110\n";
+	empty_file << "0001111\n";
+	empty_file.close();
+
+	test_world = new World(test_file);
+
+	/* Position that should be empty */
+	Coord empty_coord(1, 0);
+	if (!test_world->check_coord(&empty_coord))
+	{
+		std::cout << "FAILED: Coord that should be empty is not." << std::endl;
+
+		/* Remove the test file */
+		std::remove(test_file);
+
+		return false;
+	}
+
+	/* Position that should be blocked */
+	Coord blocked_coord(0, 0);
+	if (test_world->check_coord(&blocked_coord))
+	{
+		std::cout << "FAILED: Coord that should be blocked is not." << std::endl;
+
+		/* Remove the test file */
+		std::remove(test_file);
+
+		return false;
+	}
+
+	/* Coordinates that should not exist */
+	const int COORD_COUNT = 6;
+	Coord coords[COORD_COUNT];
+	coords[0] = Coord(-1, 0);
+	coords[1] = Coord(0, -1);
+	coords[2] = Coord(-1, -1);
+	coords[3] = Coord(0, 3);
+	coords[4] = Coord(7, 0);
+	coords[5] = Coord(7, 3);
+
+	for (int i = 0; i < COORD_COUNT; i++)
+	{
+		if (test_world->check_coord(&coords[i]))
+		{
+			std::cout << 
+				"FAILED: Coord[" << i <<
+				"] should not exist, but it is treated as though exists." <<
+				std::endl;
+
+			/* Remove the test file */
+			std::remove(test_file);
+
+			return false;
+		}
+	}
+
+	delete test_world;
+
+	/* Remove the test file */
+	std::remove(test_file);
+
+	return true;
+}
+
+/* 
+* Create a world and print it to make sure the world is correctly created 
+*/
+void Tests::print_world_test(std::string test_file)
+{
+	/* Create a world based on a text file */
+	World* test_world;
+	try
+	{
+		test_world = new World(test_file);
+	}
+	catch (TerminalException& ex)
+	{
+		std::cout << ex.what() << std::endl;
+		return;
+	}
+
+	/* Print the world and manually confirm that it is accurate */
+	test_world->print_world();
+
+	delete test_world;
 }
