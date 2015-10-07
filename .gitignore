@@ -5,3 +5,11 @@ MS_Project.vcxproj.filters
 MS_Project.vcxproj
 MS_Project.v12.suo
 *.docx
+*.obj
+*.idb
+*.pdb
+*.tlog
+*.lastbuildstate
+unsuccessfulbuild
+*.exe
+*.ilk

@@ -87,3 +87,24 @@ Position & Position::operator=(Position& rhs)
 	depth = rhs.get_depth();
 	return rhs;
 }
+
+/*
+* Equals comparison operator
+* @param rhs: The Position object to compare
+* @return true if rhs equals this position, false otherwise
+*/
+bool Position::operator==(Position& rhs)
+{
+	/* Get the Coord object of rhs */
+	Coord rhs_coord = rhs.get_coord();
+
+	/* Test if the 3 parameters of the Position objects are the same */
+	if (
+		coord.get_xcoord() == rhs_coord.get_xcoord() &&
+		coord.get_ycoord() == rhs_coord.get_ycoord() &&
+		depth == rhs.get_depth()
+		)
+		return true;
+
+	return false;
+}

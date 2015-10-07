@@ -42,6 +42,7 @@ public:
 
 	/* Operator overloads */
 	Position & operator=(Position& rhs);
+	bool operator==(Position& rhs);
 
 	/* Access functions */
 	Coord * get_coord() { return &coord; };

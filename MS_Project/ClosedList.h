@@ -14,11 +14,11 @@ public:
 	ClosedList(ClosedList* p_parent);
 
 	/* Check if a position is in the list */
-	bool check_duplicate(Position* pos);
+	bool check_duplicate(AStarNode* node);
 	/* Check if a position is in the list given the hash */
 	bool check_duplicate(int hash);
-	/* Add a coordinate to the CLOSED list */
-	void add_pos(AStarNode* add_node);
+	/* Add a node to the CLOSED list */
+	void add_node(AStarNode* add_node);
 
 	/* Destructor */
 	~ClosedList();

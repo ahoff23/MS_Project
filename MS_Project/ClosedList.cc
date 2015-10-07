@@ -26,12 +26,12 @@ ClosedList::ClosedList(ClosedList* p_parent)
 /* 
 * Check if a position is in the list 
 * @param pos: The position to check the ClosedList for
-* @return true if pos is found, false otherwise
+* @return true if node is found, false otherwise
 */
-bool ClosedList::check_duplicate(Position* pos)
+bool ClosedList::check_duplicate(AStarNode* node)
 {
 	/* Get the hash of the position */
-	int hash = CantorPair::get_int(pos);
+	int hash = CantorPair::get_int(node);
 
 	/* Check this ClosedList first */
 	if (list.find(hash) != list.end())
@@ -48,7 +48,7 @@ bool ClosedList::check_duplicate(Position* pos)
 /*
 * Check if a position is in the list
 * @param hash: The hash of the position being sought
-* @return true if pos is found, false otherwise
+* @return true if a node corresponding to the hash is found, false otherwise
 */
 bool ClosedList::check_duplicate(int hash)
 {
@@ -68,14 +68,14 @@ bool ClosedList::check_duplicate(int hash)
 * Add a AStarNode to the ClosedList
 * @param add_node: The AStarNode to add
 */
-void ClosedList::add_pos(AStarNode* add_node)
+void ClosedList::add_node(AStarNode* add_node)
 {
 	/* Make sure the add_node pointer is allocated */
 	if (add_node == nullptr)
 		return;
 
 	/* Get the hash corresponding to this AStarNode */
-	int hash = CantorPair::get_int(add_node->get_pos());
+	int hash = CantorPair::get_int(add_node);
 
 	/* Place the AStarNode in the hash table */
 	list.emplace(hash, add_node);

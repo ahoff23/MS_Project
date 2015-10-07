@@ -169,14 +169,14 @@ bool Tests::closed_list_tests()
 	int ycoord = 2;
 	int depth = 3;
 	Position pos_1 = Position(xcoord, ycoord, depth);
-	AStarNode* add_node_1 = new AStarNode(pos_1, nullptr, 1);
+	AStarNode* add_node_1 = new AStarNode(&pos_1, nullptr, 1);
 
 	/* Add a ClosedNode to the list */
 	ClosedList list_1 = ClosedList();
-	list_1.add_pos(add_node_1);
+	list_1.add_node(add_node_1);
 
 	/* Check if a duplicate of the ClosedNode is in the list */
-	if (!list_1.check_duplicate(&pos_1))
+	if (!list_1.check_duplicate(add_node_1))
 	{
 		std::cout <<
 			"FAILED: ClosedList check_duplicate function did not find an existing position." <<
@@ -186,7 +186,8 @@ bool Tests::closed_list_tests()
 
 	/* Check if a non-duplicate is not in the list */
 	Position pos_2 = Position(xcoord + 1, ycoord + 1, depth);
-	if (!list_1.check_duplicate(&pos_1))
+	AStarNode* add_node_2 = new AStarNode(&pos_2, nullptr, 1);
+	if (!list_1.check_duplicate(add_node_2))
 	{
 		std::cout <<
 			"FAILED: ClosedList check_duplicate function foound a non-existant duplicate." <<
@@ -198,11 +199,10 @@ bool Tests::closed_list_tests()
 	ClosedList list_2 = ClosedList(&list_1);
 
 	/* Add a ClosedNode to the new list */
-	AStarNode* add_node_2 = new AStarNode(pos_2, nullptr, 1);
-	list_2.add_pos(add_node_2);
+	list_2.add_node(add_node_2);
 
 	/* Check for a duplicate from the parent */	
-	if (!list_1.check_duplicate(&pos_1))
+	if (!list_1.check_duplicate(add_node_2))
 	{
 		std::cout <<
 			"FAILED: ClosedList check_duplicate function did not find an existing position" <<
