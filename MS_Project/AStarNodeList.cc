@@ -149,6 +149,21 @@ void AStarNodeList::delete_node(AStarNode* node)
 	}
 }
 
+
+/*
+* Remove a referenc to a node in the list without deleting or
+* decrementing the nodes counter
+* @param node: The node to remove
+*/
+void AStarNodeList::remove_hash(AStarNode* node)
+{
+	/* Get the has value of the node */
+	int hash = CantorPair::get_int(node);
+
+	/* Remove the node from the list */
+	list.erase(hash);
+}
+
 /* 
 * Copy an existing AStarNodeList into this one 
 * @param rhs: The AStarNodeList to copy

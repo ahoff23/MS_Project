@@ -35,6 +35,12 @@ public:
 	*/
 	void delete_node(AStarNode* node);
 
+	/* 
+	* Remove a referenc to a node in the list without deleting or
+	* decrementing the nodes counter
+ 	*/
+	void remove_hash(AStarNode* node);
+
 	/* Operators */
 	AStarNodeList & operator=(AStarNodeList& rhs);
 

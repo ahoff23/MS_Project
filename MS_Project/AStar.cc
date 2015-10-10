@@ -114,13 +114,14 @@ void AStar::find_solution()
 		int len = successors.size();
 		for (int i = 0; i < len; i++)
 		{
-			/* Check if the successor is in either the OPEN or CLOSED list*/
+			/* Check if the successor is in either the OPEN or CLOSED list */
 			AStarNodePointer* check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
 			AStarNodePointer* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
 			
 			/* If the successor is not a duplicate, add it to the OPEN list */
 			if (check_open_list == nullptr && check_closed_list == nullptr)
 			{
+				/* Create a new node and add it to the OPEN list (both heap and hash table) */
 				AStarNode* add_node = new AStarNode(successors[i], top, calc_cost(&successors[i]));
 				open_list.push(add_node);
 				open_list_hash_table->add_node(add_node);
@@ -139,8 +140,8 @@ void AStar::find_solution()
 		if (!closed_list->check_duplicate(top))
 			closed_list->add_node(top);
 
-		/* Remove the node from the OPEN list */
-		open_list_hash_table->delete_node(top);
+		/* Remove the node from the OPEN list without deleting the node */
+		open_list_hash_table->remove_hash(top);
 	}
 }
 
@@ -254,11 +255,4 @@ AStar::~AStar()
 	delete closed_list;
 	delete start;
 	delete goal;
-
-	/* Delete every OPEN list node */
-	while (!open_list.empty())
-	{
-		delete open_list.top();
-		open_list.pop();
-	}
 }

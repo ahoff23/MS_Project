@@ -484,7 +484,7 @@ bool Tests::a_star_tests()
 	}
 
 	/* Validate each path member*/
-	if (check[0] != Coord(0, 0) || check[1] != Coord(0, 1) || check[2] != Coord(0, 2))
+	if (check[0] != Coord(0, 0) || check[1] != Coord(1, 0) || check[2] != Coord(2, 0))
 	{
 		std::cout << "FAILED: A* solution path is incorrect" << std::endl;
 		return false;
