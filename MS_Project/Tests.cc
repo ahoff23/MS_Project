@@ -46,6 +46,11 @@ bool Tests::run_tests()
 	else
 		std::cout << "A* Tests Passed." << std::endl;
 
+	if (!path_clear_a_star_tests())
+		return false;
+	else
+		std::cout << "Path Clear A* Tests Passed." << std::endl;
+
 	std::cout << "All tests passed." << std::endl;
 	return true;
 }
@@ -430,25 +435,8 @@ void Tests::print_world_test(std::string test_file)
 */
 bool Tests::a_star_tests()
 {
-	/* Pointer to worlds being tested */
-	World* test_world;
-
-	/* Create a world and confirm the path is correct */
-	char test_file[] = "Worlds/test_file.txt";
-	std::ofstream empty_file(test_file);
-	empty_file << "111";
-	empty_file.close();
-
-	/* Create the new test world */
-	try
-	{
-		test_world = new World(test_file);
-	}
-	catch (TerminalException& ex)
-	{
-		std::cout << ex.what() << std::endl;
-		return false;
-	}
+	/* Create a world */
+	World* test_world = create_world();
 
 	/* Create the start and goal coordinates */
 	Coord start = Coord(0, 0);
@@ -483,7 +471,7 @@ bool Tests::a_star_tests()
 		return false;
 	}
 
-	/* Validate each path member*/
+	/* Validate each path member */
 	if (check[0] != Coord(0, 0) || check[1] != Coord(1, 0) || check[2] != Coord(2, 0))
 	{
 		std::cout << "FAILED: A* solution path is incorrect" << std::endl;
@@ -492,8 +480,100 @@ bool Tests::a_star_tests()
 
 	delete search;
 
+	return true;
+}
+
+bool Tests::path_clear_a_star_tests()
+{
+	/* Create a world */
+	World* test_world = create_world();
+
+	/* Create the start and goal coordinates */
+	Coord start = Coord(0, 0);
+	Coord goal = Coord(2, 0);
+
+	/* Create the A* Search and find the solution */
+	AStar* search = new AStar(&start, &goal, test_world);
+	search->find_solution();
+
+	/* 
+	* Create a child search of the prior A* search with a constraint 
+	* that would require the original solution change
+	*/
+	Position constraint = Position(1, 0, 1);
+	AStar* constrained_search = new AStar(search, &constraint);
+
+	/* Get the solution */
+	std::stack<Coord> path = constrained_search->get_solution();
+
+	/* Validate solution */
+	const int SOLUTION_LENGTH = 4;
+	Coord check[SOLUTION_LENGTH];
+	for (int i = 0; i < SOLUTION_LENGTH; i++)
+	{
+		/* Make sure the path is not too short */
+		if (path.size() == 0)
+		{
+			std::cout << "FAILED: A* return path is too short." << std::endl;
+			return false;
+		}
+
+		check[i] = path.top();
+		std::cout << check[i] << std::endl;
+		path.pop();
+	}
+
+	/* Validate the path length */
+	if (path.size() > 0)
+	{
+		std::cout << "FAILED: A* return path is too long." << std::endl;
+		return false;
+	}
+
+	/* Validate each path member (there are two possible optimal paths) */
+	if (
+		check[0] != Coord(0, 0) || 
+		(check[1] != Coord(1, 0) && check[1] != Coord(0,0)) || 
+		check[2] != Coord(1, 0) ||
+		check[3] != Coord(2, 0))
+	{
+		std::cout << "FAILED: A* solution path is incorrect" << std::endl;
+		return false;
+	}
+
+	delete search;
+	delete constrained_search;
+	delete test_world;
+}
+
+World* Tests::create_world()
+{
+	/* Pointer to worlds being tested */
+	World* test_world;
+
+	/* Create a world and confirm the path is correct */
+	char test_file[] = "Worlds/test_file.txt";
+	std::ofstream empty_file(test_file);
+	empty_file << "111";
+	empty_file.close();
+
+	/* Create the new test world */
+	try
+	{
+		test_world = new World(test_file);
+	}
+	catch (TerminalException& ex)
+	{
+		std::cout << ex.what() << std::endl;
+
+		/* Remove the test file */
+		std::remove(test_file);
+
+		return nullptr;
+	}
+
 	/* Remove the test file */
 	std::remove(test_file);
 
-	return true;
+	return test_world;
 }

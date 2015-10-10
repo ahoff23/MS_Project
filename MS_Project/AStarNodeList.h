@@ -33,7 +33,7 @@ public:
 	* counter reaches 0. This is done to ensure that a node is not deleted
 	* if another path exists to reach that node.
 	*/
-	void delete_node(AStarNode* node);
+	void delete_node(AStarNode* node,bool del_mem);
 
 	/* 
 	* Remove a referenc to a node in the list without deleting or

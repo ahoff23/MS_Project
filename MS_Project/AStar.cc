@@ -9,6 +9,7 @@
 #include "World.h"
 #include "AStarNodeList.h"
 #include "AStarNodePointer.h"
+#include "PathClearAStar.h"
 
 /* 
 * Initialize the A* search and place the root on the OPEN list 
@@ -18,8 +19,7 @@
 */
 AStar::AStar(Coord* p_start, Coord* p_goal, World* p_world)
 {
-	/* Get the start and goal coordinate of the A* Search */
-	start = new Coord(p_start);
+	/* Get the goal coordinate of the A* Search */
 	goal = new Coord(p_goal);
 
 	/* No goal node is found initially */
@@ -32,7 +32,7 @@ AStar::AStar(Coord* p_start, Coord* p_goal, World* p_world)
 	constraints = std::unordered_map<int, bool>();
 
 	/* Place the root into the OPEN list */
-	Position start_pos = Position(*start, 0);
+	Position start_pos = Position(p_start, 0);
 	AStarNode* start_node = new AStarNode(start_pos, nullptr, calc_cost(&start_pos));
 	open_list.emplace(start_node);
 	open_list_hash_table->add_node(start_node);
@@ -42,14 +42,15 @@ AStar::AStar(Coord* p_start, Coord* p_goal, World* p_world)
 }
 
 /*
-* Constructor
+* Constructor that begins by eliminating nodes descended from
+* a position given as a parameter
 * @param p_astar: The AStar list to copy
-* @param p_world: Pointer to the world this search will navigate
+* @param new_constraint: The new constraint to remove all descendants of
+* from the CLOSED and OPEN lists
 */
-AStar::AStar(AStar* p_astar,World* p_world)
+AStar::AStar(AStar* p_astar, Position* new_constraint)
 {
 	/* Get the start and goal coordinate of the A* Search */
-	start = new Coord(*(p_astar->get_start()));
 	goal = new Coord(*(p_astar->get_goal()));
 
 	/* No goal node is found initially */
@@ -60,8 +61,10 @@ AStar::AStar(AStar* p_astar,World* p_world)
 	open_list_hash_table = new AStarNodeList(); 
 	*open_list_hash_table = *p_astar->get_open_list_hash_table();
 
-	/* Copy the constraints */
+	/* Copy the constraints and add the new constraint */
 	constraints = *(p_astar->get_constraints());
+	int hash = CantorPair::get_int(new_constraint);
+	constraints.emplace(hash, true);
 
 	/* 
 	* Create a new CLOSED list whose parent is the closed list of
@@ -75,7 +78,14 @@ AStar::AStar(AStar* p_astar,World* p_world)
 	**********************************************************************/
 
 	/* Set the world to navigate */
-	world = p_world;
+	world = p_astar->get_world();
+
+	/* Remove descendants of new_constraint from the OPEN and CLOSED lists */
+	if (new_constraint != nullptr)
+	{
+		PathClearAStar path_clear = PathClearAStar(this, new_constraint);
+		path_clear.path_clear_a_star();
+	}
 }
 
 /*
@@ -99,10 +109,24 @@ void AStar::find_solution()
 		AStarNode* top = open_list.top();
 		open_list.pop();
 
+		/* Make sure the node has not been removed from the list by PathClearA* */
+		AStarNode* check_parent = top->get_parent();
+		if (check_parent != nullptr && open_list_hash_table->check_duplicate(top->get_pos(), check_parent->get_pos()) == nullptr)
+		{
+			/* Node has been removed from OPEN list via PCA*, delete it */
+			delete top;
+
+			continue;
+		}
+
 		/* Check if the node is a solution, if it is, return it */
 		if (*top->get_pos()->get_coord() == *goal)
 		{
 			goal_node = top;
+
+			/* Remove the node from the OPEN list without deleting the node */
+			open_list_hash_table->remove_hash(top);
+
 			return;
 		}
 
@@ -146,22 +170,6 @@ void AStar::find_solution()
 }
 
 /* 
-* Calculate the cost of a position 
-* @param pos: The position to calculate the cost for
-* @return the total cost of the position
-*/
-float AStar::calc_cost(Position* pos)
-{
-	/* Distances between pos and goal in X and Y axes */
-	int x_diff = pos->get_coord()->get_xcoord() - goal->get_xcoord();
-	int y_diff = pos->get_coord()->get_ycoord() - goal->get_ycoord();
-
-	float heuristic = sqrt(pow(x_diff, 2) + pow(y_diff, 2));
-
-	return heuristic + float(pos->get_depth());
-}
-
-/* 
 * Get a vector of successor positions of a given position 
 * @param pos: The position whose successors will be found by this function
 * @param successors: Vector which successors will be appended to
@@ -191,12 +199,18 @@ void AStar::get_successors(Position* pos, std::vector<Position>* successors)
 	possible_successors[8] = Position(x_coord, y_coord - 1, depth);
 
 	/* 
-	* Add each possible successor if it is an existing coordinate and 
-	* is not blocked by an obstacle
+	* Add each possible successor if it is an existing coordinate, 
+	* is not blocked by an obstacle and is not constrained.
 	*/
 	for (int i = 0; i < NUM_SUCCESSORS; i++)
 	{
-		if (world->check_coord(possible_successors[i].get_coord()))
+		/* Get the hash of the position */
+		int hash = CantorPair::get_int(&possible_successors[i]);
+
+		if (
+			world->check_coord(possible_successors[i].get_coord()) &&
+			constraints.find(hash) == constraints.end()
+			)
 			successors->push_back(possible_successors[i]);
 	}
 }
@@ -247,12 +261,27 @@ void AStar::print_solution()
 }
 
 /*
+* Calculate the cost of a position
+* @param pos: The position to calculate the cost for
+* @return the total cost of the position
+*/
+float AStar::calc_cost(Position* pos)
+{
+	/* Distances between pos and goal in X and Y axes */
+	int x_diff = pos->get_coord()->get_xcoord() - goal->get_xcoord();
+	int y_diff = pos->get_coord()->get_ycoord() - goal->get_ycoord();
+
+	float heuristic = sqrt(pow(x_diff, 2) + pow(y_diff, 2));
+
+	return heuristic + float(pos->get_depth());
+}
+
+/*
 * Destructor
 */
 AStar::~AStar()
 {
 	delete open_list_hash_table;
 	delete closed_list;
-	delete start;
 	delete goal;
 }

@@ -118,13 +118,14 @@ void AStarNodeList::add_node(AStarNode* add_node)
 /* 
 * Remove a node from the list if it exists (local list only)
 * @param node: The node to remove
+* @param del_mem: True if the node should be deleted from memory, false otherwise
 */
-void AStarNodeList::delete_node(AStarNode* node)
+void AStarNodeList::delete_node(AStarNode* node, bool del_mem)
 {
-	/* Get the has value of the node */
+	/* Get the hash value of the node */
 	int hash = CantorPair::get_int(node);
 
-	/* Decrement the counter */
+	/* Find the node iterator */
 	auto it = list.find(hash);
 
 	/* Make sure the node exists */
@@ -141,11 +142,13 @@ void AStarNodeList::delete_node(AStarNode* node)
 	if (ptr->get_counter() == 0)
 	{
 		/* Delete the node pointed to by the list */
-		auto it = list.find(hash);
-		AStarNodePointer* del = it->second;
-		delete del;
+		if (del_mem == true)
+		{
+			AStarNodePointer* del = it->second;
+			delete del;
+		}
 
-		list.erase(hash);
+		list.erase(it);
 	}
 }
 
