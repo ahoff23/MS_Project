@@ -1,11 +1,14 @@
 #include <math.h>
+#include <iostream>
+#include <fstream>
 
 #include "AStar.h"
 #include "AStarNode.h"
 #include "Coordinates.h"
 #include "CantorPair.h"
 #include "World.h"
-#include "ClosedList.h"
+#include "AStarNodeList.h"
+#include "AStarNodePointer.h"
 
 /* 
 * Initialize the A* search and place the root on the OPEN list 
@@ -24,12 +27,15 @@ AStar::AStar(Coord* p_start, Coord* p_goal, World* p_world)
 
 	/* Initialize lists and hash tables */
 	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode>>();
-	open_list_hash_table = std::unordered_multimap<int, AStarNode*>();
+	open_list_hash_table = new AStarNodeList(nullptr);
+	closed_list = new AStarNodeList(nullptr);
 	constraints = std::unordered_map<int, bool>();
 
 	/* Place the root into the OPEN list */
 	Position start_pos = Position(*start, 0);
-	add_open(&start_pos, nullptr);
+	AStarNode* start_node = new AStarNode(start_pos, nullptr, calc_cost(&start_pos));
+	open_list.emplace(start_node);
+	open_list_hash_table->add_node(start_node);
 
 	/* Set the world to navigate */
 	world = p_world;
@@ -37,34 +43,36 @@ AStar::AStar(Coord* p_start, Coord* p_goal, World* p_world)
 
 /*
 * Constructor
-* @param p_start: The starting coordinate of the A* search
-* @param p_goal: The goal coordinate of the A* search
-* @param p_open_list: The OPEN list as a minheap
-* @param p_open_list_hash_table: The OPEN list as a hash table
-* @param p_constraints: A hash table of the constraints
+* @param p_astar: The AStar list to copy
 * @param p_world: Pointer to the world this search will navigate
 */
-AStar::AStar(
-	Coord* p_start, Coord* p_goal,
-	std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode>>* p_open_list,
-	std::unordered_multimap<int, AStarNode*>* p_open_list_hash_table,
-	std::unordered_map<int, bool>* p_constraints,
-	World* p_world
-	)
+AStar::AStar(AStar* p_astar,World* p_world)
 {
 	/* Get the start and goal coordinate of the A* Search */
-	start = new Coord(p_start);
-	goal = new Coord(p_goal);
+	start = new Coord(*(p_astar->get_start()));
+	goal = new Coord(*(p_astar->get_goal()));
 
 	/* No goal node is found initially */
 	goal_node = nullptr;
 
 	/* Copy both OPEN lists */
-	open_list = *p_open_list;
-	open_list_hash_table = *p_open_list_hash_table;
+	open_list = *(p_astar->get_open_list());
+	open_list_hash_table = new AStarNodeList(); 
+	*open_list_hash_table = *p_astar->get_open_list_hash_table();
 
 	/* Copy the constraints */
-	constraints = *p_constraints;
+	constraints = *(p_astar->get_constraints());
+
+	/* 
+	* Create a new CLOSED list whose parent is the closed list of
+	* the parent A* Node, p_astar
+	*/
+	closed_list = new AStarNodeList(nullptr);
+	closed_list = p_astar->get_closed_list();
+	/**********************************************************************
+	* UNCOMMENT THIS IF YOU WANT TO GO BACCK TO USING PARENT CLOSED LISTS
+	closed_list = new AStarNodeList(p_astar->get_closed_list());
+	**********************************************************************/
 
 	/* Set the world to navigate */
 	world = p_world;
@@ -87,61 +95,53 @@ void AStar::find_solution()
 {
 	while (!open_list.empty())
 	{
-		//Pop min cost from open_list and remove from hash table
+		/* Pop min cost from open_list and remove from hash table */
 		AStarNode* top = open_list.top();
 		open_list.pop();
-		open_list_hash_table.erase(CantorPair::get_int(top->get_pos()));
 
-		//Check if the node is a solution, if it is, return it
-		if (top->get_pos()->get_coord() == goal)
+		/* Check if the node is a solution, if it is, return it */
+		if (*top->get_pos()->get_coord() == *goal)
 		{
 			goal_node = top;
 			return;
 		}
 
-		//Generate successors
+		/* Generate successors */
 		std::vector<Position> successors = std::vector<Position>();
 		get_successors(top->get_pos(), &successors);
 
-		//For each successor, check if it is in the open_list
+		/* For each successor, check if it is in the OPEN list and CLOSED list */
 		int len = successors.size();
 		for (int i = 0; i < len; i++)
 		{
-			int check_open_list = check_duplicate_open(&successors[i], top->get_pos());
-
-			/* If it is and its parent is there as well, do nothing */
-			if (check_open_list == 2)
-				continue;
-			/* 
-			* If it is but its parent node is not there or if it is not
-			* there at all, add the parent to that node 
-			*/
-			else if (check_open_list == 1 || check_open_list == 0)
+			/* Check if the successor is in either the OPEN or CLOSED list*/
+			AStarNodePointer* check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
+			AStarNodePointer* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
+			
+			/* If the successor is not a duplicate, add it to the OPEN list */
+			if (check_open_list == nullptr && check_closed_list == nullptr)
 			{
-				int hash = CantorPair::get_int(&successors[i]);
-				open_list_hash_table.emplace(hash, top);
+				AStarNode* add_node = new AStarNode(successors[i], top, calc_cost(&successors[i]));
+				open_list.push(add_node);
+				open_list_hash_table->add_node(add_node);
+
+				/* Increment the counter */
+				check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
+				check_open_list->inc();
 			}
+			else if (check_open_list != nullptr)
+				check_open_list->inc();
+			else if (check_closed_list != nullptr)
+				check_closed_list->inc();
 		}
 
 		/* Add top to the CLOSED list unless a duplicate is found */
 		if (!closed_list->check_duplicate(top))
 			closed_list->add_node(top);
+
+		/* Remove the node from the OPEN list */
+		open_list_hash_table->delete_node(top);
 	}
-}
-
-/* 
-* Place a node in the OPEN list 
-* @param pos: The position to add to the OPEN lists
-* @param parent: The parent of the new node
-*/
-void AStar::add_open(Position* pos, AStarNode* parent)
-{
-	/* Create a new AStarNode */
-	AStarNode* add_node = new AStarNode(pos, parent, calc_cost(pos));
-
-	/* Place the node in both the minheap and the hash table */
-	open_list.emplace(add_node);
-	open_list_hash_table.emplace(CantorPair::get_int(pos), add_node);
 }
 
 /* 
@@ -151,8 +151,11 @@ void AStar::add_open(Position* pos, AStarNode* parent)
 */
 float AStar::calc_cost(Position* pos)
 {
-	float heuristic = sqrt(pow(pos->get_coord()->get_xcoord() - goal->get_xcoord(), 2)
-		+ pow(pos->get_coord()->get_ycoord() - goal->get_ycoord(), 2));
+	/* Distances between pos and goal in X and Y axes */
+	int x_diff = pos->get_coord()->get_xcoord() - goal->get_xcoord();
+	int y_diff = pos->get_coord()->get_ycoord() - goal->get_ycoord();
+
+	float heuristic = sqrt(pow(x_diff, 2) + pow(y_diff, 2));
 
 	return heuristic + float(pos->get_depth());
 }
@@ -197,33 +200,6 @@ void AStar::get_successors(Position* pos, std::vector<Position>* successors)
 	}
 }
 
-/* 
-* Check if a node is in the OPEN list 
-* @param pos: The Position to check
-* @param parent: The parent of pos (i.e. the position directly preceding pos)
-* @return 0 if pos is not in the list, 1 if it is but the parent is not, 
-* 2 if it is in the list and has a parent equal to the parent parameter
-*/
-int AStar::check_duplicate_open(Position* pos, Position* parent)
-{
-	/* Get the hash of the Position via a Cantor Pair */
-	int hash = CantorPair::get_int(pos);
-
-	/* Check if the position is in the hash table at all */
-	auto it = open_list_hash_table.find(hash);
-	if (it == open_list_hash_table.end())
-		return 0;
-
-	/* Check if the parameter parent is a parent of pos in the hash table */
-	while (it != open_list_hash_table.end() && it->first == hash)
-	{
-		if (*it->second->get_pos() == *parent)
-			return 2;
-	}
-
-	return 1;
-}
-
 /*
 * Return the solution as a stack of coordinates
 * @return a stack of Coord objects, if find_solution() has not been
@@ -254,10 +230,27 @@ std::stack<Coord> AStar::get_solution()
 }
 
 /*
+* Print the solution to the console 
+*/
+void AStar::print_solution()
+{
+	/* Get the solution */
+	std::stack<Coord> path = get_solution();
+
+	/* Make sure the solution is correct */
+	while (!path.empty())
+	{
+		std::cout << path.top() << std::endl;
+		path.pop();
+	}
+}
+
+/*
 * Destructor
 */
 AStar::~AStar()
 {
+	delete open_list_hash_table;
 	delete closed_list;
 	delete start;
 	delete goal;

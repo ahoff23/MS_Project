@@ -1,6 +1,8 @@
 #ifndef COORDINATES_H
 #define COORDINATES_H
 
+#include <fstream>
+
 /*
 * Denotes a coordinate in a 2D grid system with an x and y coordinate
 */
@@ -14,6 +16,9 @@ public:
 
 	/* Operator overloads */
 	Coord & operator=(Coord& rhs);
+	bool operator!=(Coord& rhs);
+	friend std::ostream & operator<<(std::ostream& out, Coord& coord);
+	bool operator==(Coord& rhs);
 
 	/* Access functions */
 	int get_xcoord() { return xcoord; };

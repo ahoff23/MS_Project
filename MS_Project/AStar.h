@@ -8,8 +8,8 @@
 #include <stack>
 
 class Coord;
-class AStarNode;
-class ClosedList;
+class AStarNode; 
+class AStarNodeList;
 class Position;
 class World;
 
@@ -24,13 +24,7 @@ public:
 	AStar(Coord* p_start, Coord* p_goal, World* p_world);
 
 	/* Initialize the A* search from a pre-existing A* search */
-	AStar(
-		Coord* p_start, Coord* p_goal, 
-		std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode>>* p_open_list,
-		std::unordered_multimap<int, AStarNode*>* p_open_list_hash_table,
-		std::unordered_map<int, bool>* p_constraints,
-		World* p_world
-		);
+	AStar(AStar* p_astar, World* p_world);
 
 	/* Add a conflict to the conflict hash table */
 	void add_conflict(Position* conflict);
@@ -43,6 +37,18 @@ public:
 
 	/* Return the solution as a stack of coordinates*/
 	std::stack<Coord> get_solution();
+
+	/* Print the solution to the console */
+	void print_solution();
+
+	/* Accessor functions */
+	Coord* get_start() { return start; };
+	Coord* get_goal() { return goal; };
+	std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode>>*
+		get_open_list() { return &open_list; };
+	AStarNodeList* get_open_list_hash_table() { return open_list_hash_table; };
+	AStarNodeList* get_closed_list() { return closed_list; };
+	std::unordered_map<int, bool>* get_constraints() { return &constraints; };
 
 	/* Destructor */
 	~AStar();
@@ -63,13 +69,12 @@ private:
 	std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode>> open_list;
 
 	/* 
-	* OPEN list in the form of a hash table where the hash is the cantor pair of the Position
-	* object of the OpenNode and the value is all positions preceding this position.
+	* OPEN list in the form of a hash table
 	*/
-	std::unordered_multimap<int, AStarNode*> open_list_hash_table;
+	AStarNodeList* open_list_hash_table;
 	
-	/* CLOSED list for the search */
-	ClosedList* closed_list;
+	/* CLOSED list for the search in the form of a hash table */
+	AStarNodeList* closed_list;
 
 	/*
 	* Hash table for the conflicts at this node. The key is the cantor pair of the Position
@@ -78,17 +83,11 @@ private:
 	*/
 	std::unordered_map<int, bool> constraints;
 
-	/* Place a node in the OPEN list */
-	void add_open(Position* pos, AStarNode* parent);
-
 	/* Calculate the cost of a position */
 	float calc_cost(Position* pos);
 
 	/* Get a vector of successor positions of a given position */
 	void get_successors(Position* pos, std::vector<Position>* successors);
-
-	/* Check if a node is in the OPEN list */
-	int check_duplicate_open(Position* pos, Position* parent);
 };
 
 #endif

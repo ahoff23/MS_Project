@@ -1,3 +1,5 @@
+#include <string>
+
 #include "Coordinates.h"
 
 /*
@@ -41,6 +43,19 @@ Coord & Coord::operator=(Coord& rhs)
 	xcoord = rhs.get_xcoord();
 	ycoord = rhs.get_ycoord();
 	return rhs;
+}
+
+/*
+* Equals comparison operator
+* @param rhs: The Coord object to compare
+* @return true if rhs equals this coordinate, false otherwise
+*/
+bool Coord::operator==(Coord& rhs)
+{
+	/* Return true if both Coords have the same X and Y coords */
+	if (xcoord == rhs.get_xcoord() && ycoord == rhs.get_ycoord())
+		return true;
+	return false;
 }
 
 /* 
@@ -107,4 +122,27 @@ bool Position::operator==(Position& rhs)
 		return true;
 
 	return false;
+}
+
+/* 
+* Output stream operator 
+* @param out: The Coord to output
+* @return ostream containing data to be outputted to console
+*/
+std::ostream& operator<<(std::ostream& out, Coord& coord)
+{
+	out << "(" << coord.get_xcoord() << "," << coord.get_ycoord() << ")";
+	return out;
+}
+
+/* 
+* Compares the X and Y coordinates of both Coords 
+* @return true if both Coords have the same X and Y coordinates
+*/
+bool Coord::operator!=(Coord& rhs)
+{
+	if (xcoord != rhs.get_xcoord() || ycoord != rhs.get_ycoord())
+		return false;
+
+	return true;
 }

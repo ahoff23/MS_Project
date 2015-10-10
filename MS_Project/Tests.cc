@@ -5,9 +5,10 @@
 #include "Coordinates.h"
 #include "CantorPair.h"
 #include "AStarNode.h"
-#include "ClosedList.h"
+#include "AStarNodeList.h"
 #include "World.h"
 #include "Exceptions.h"
+#include "AStar.h"
 
 /* 
 * Runs all tests 
@@ -17,14 +18,33 @@ bool Tests::run_tests()
 {
 	if (!coordinate_tests())
 		return false;
+	else
+		std::cout << "Coordinate Tests Passed." << std::endl;
+
 	if (!position_tests())
-		return false;
+		return false;	
+	else
+		std::cout << "Position Tests Passed." << std::endl;
+
 	if (!cantor_pair_tests())
 		return false;
+	else
+		std::cout << "Cantor Pair Tests Passed." << std::endl;
+
 	if (!closed_list_tests())
 		return false;
+	else
+		std::cout << "Closed List Tests Passed." << std::endl;
+
 	if (!world_tests())
 		return false;
+	else
+		std::cout << "World Tests Passed." << std::endl;
+
+	if (!a_star_tests())
+		return false;
+	else
+		std::cout << "A* Tests Passed." << std::endl;
 
 	std::cout << "All tests passed." << std::endl;
 	return true;
@@ -169,10 +189,10 @@ bool Tests::closed_list_tests()
 	int ycoord = 2;
 	int depth = 3;
 	Position pos_1 = Position(xcoord, ycoord, depth);
-	AStarNode* add_node_1 = new AStarNode(&pos_1, nullptr, 1);
+	AStarNode* add_node_1 = new AStarNode(pos_1, nullptr, 1);
 
 	/* Add a ClosedNode to the list */
-	ClosedList list_1 = ClosedList();
+	AStarNodeList list_1 = AStarNodeList();
 	list_1.add_node(add_node_1);
 
 	/* Check if a duplicate of the ClosedNode is in the list */
@@ -181,22 +201,25 @@ bool Tests::closed_list_tests()
 		std::cout <<
 			"FAILED: ClosedList check_duplicate function did not find an existing position." <<
 			std::endl;
+		delete add_node_1;
 		return false;
 	}
 
 	/* Check if a non-duplicate is not in the list */
 	Position pos_2 = Position(xcoord + 1, ycoord + 1, depth);
-	AStarNode* add_node_2 = new AStarNode(&pos_2, nullptr, 1);
+	AStarNode* add_node_2 = new AStarNode(pos_2, nullptr, 1);
 	if (!list_1.check_duplicate(add_node_2))
 	{
 		std::cout <<
 			"FAILED: ClosedList check_duplicate function foound a non-existant duplicate." <<
-			std::endl;
+			std::endl; 
+		delete add_node_1;
+		delete add_node_2;
 		return false;
 	}
 
 	/* Create a new ClosedList, with the old ClosedList as its parent */
-	ClosedList list_2 = ClosedList(&list_1);
+	AStarNodeList list_2 = AStarNodeList(&list_1);
 
 	/* Add a ClosedNode to the new list */
 	list_2.add_node(add_node_2);
@@ -207,6 +230,8 @@ bool Tests::closed_list_tests()
 		std::cout <<
 			"FAILED: ClosedList check_duplicate function did not find an existing position" <<
 			" in a parent ClosedList." << std::endl;
+		delete add_node_1;
+		delete add_node_2;
 		return false;
 	}
 
@@ -397,4 +422,78 @@ void Tests::print_world_test(std::string test_file)
 	test_world->print_world();
 
 	delete test_world;
+}
+
+/*
+* A* functions
+* @return true if all tests pass or print an error and return false if one test fails.
+*/
+bool Tests::a_star_tests()
+{
+	/* Pointer to worlds being tested */
+	World* test_world;
+
+	/* Create a world and confirm the path is correct */
+	char test_file[] = "Worlds/test_file.txt";
+	std::ofstream empty_file(test_file);
+	empty_file << "111";
+	empty_file.close();
+
+	/* Create the new test world */
+	try
+	{
+		test_world = new World(test_file);
+	}
+	catch (TerminalException& ex)
+	{
+		std::cout << ex.what() << std::endl;
+		return false;
+	}
+
+	/* Create the start and goal coordinates */
+	Coord start = Coord(0, 0);
+	Coord goal = Coord(2, 0);
+
+	/* Create the A* Search */
+	AStar* search = new AStar(&start, &goal, test_world);
+
+	/* Get the solution */
+	std::stack<Coord> path = search->get_solution();
+
+	/* Validate solution */
+	const int SOLUTION_LENGTH = 3;
+	Coord check[SOLUTION_LENGTH];
+	for (int i = 0; i < SOLUTION_LENGTH; i++)
+	{
+		/* Make sure the path is not too short */
+		if (path.size() == 0)
+		{
+			std::cout << "FAILED: A* return path is too short." << std::endl;
+			return false;
+		}
+
+		check[i] = path.top();
+		path.pop();
+	}
+
+	/* Validate the path length */
+	if (path.size() > 0)
+	{
+		std::cout << "FAILED: A* return path is too long." << std::endl;
+		return false;
+	}
+
+	/* Validate each path member*/
+	if (check[0] != Coord(0, 0) || check[1] != Coord(0, 1) || check[2] != Coord(0, 2))
+	{
+		std::cout << "FAILED: A* solution path is incorrect" << std::endl;
+		return false;
+	}
+
+	delete search;
+
+	/* Remove the test file */
+	std::remove(test_file);
+
+	return true;
 }

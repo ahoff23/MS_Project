@@ -15,6 +15,7 @@ public:
 	static bool cantor_pair_tests();
 	static bool closed_list_tests();
 	static bool world_tests();
+	static bool a_star_tests();
 	
 	/* Non-automated tests */
 	static void print_world_test(std::string test_file);
