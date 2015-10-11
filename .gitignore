@@ -9,6 +9,7 @@ MS_Project.v12.suo
 *.idb
 *.pdb
 *.tlog
+*.log
 *.lastbuildstate
 unsuccessfulbuild
 *.exe
