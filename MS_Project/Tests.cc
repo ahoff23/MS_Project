@@ -213,10 +213,10 @@ bool Tests::closed_list_tests()
 	/* Check if a non-duplicate is not in the list */
 	Position pos_2 = Position(xcoord + 1, ycoord + 1, depth);
 	AStarNode* add_node_2 = new AStarNode(pos_2, nullptr, 1);
-	if (!list_1.check_duplicate(add_node_2))
+	if (list_1.check_duplicate(add_node_2))
 	{
 		std::cout <<
-			"FAILED: ClosedList check_duplicate function foound a non-existant duplicate." <<
+			"FAILED: ClosedList check_duplicate function found a non-existant duplicate." <<
 			std::endl; 
 		delete add_node_1;
 		delete add_node_2;
@@ -230,6 +230,8 @@ bool Tests::closed_list_tests()
 	list_2.add_node(add_node_2);
 
 	/* Check for a duplicate from the parent */	
+	/* Currently commented out because parents are not used */
+	/*
 	if (!list_1.check_duplicate(add_node_2))
 	{
 		std::cout <<
@@ -239,6 +241,7 @@ bool Tests::closed_list_tests()
 		delete add_node_2;
 		return false;
 	}
+	*/
 
 	return true;
 }
@@ -515,11 +518,13 @@ bool Tests::path_clear_a_star_tests()
 		if (path.size() == 0)
 		{
 			std::cout << "FAILED: A* return path is too short." << std::endl;
+			delete search;
+			delete constrained_search;
+			delete test_world;
 			return false;
 		}
 
 		check[i] = path.top();
-		std::cout << check[i] << std::endl;
 		path.pop();
 	}
 
@@ -527,21 +532,27 @@ bool Tests::path_clear_a_star_tests()
 	if (path.size() > 0)
 	{
 		std::cout << "FAILED: A* return path is too long." << std::endl;
-		return false;
-	}
-
-	/* Validate each path member (there are two possible optimal paths) */
-	if (
-		check[0] != Coord(0, 0) || 
-		(check[1] != Coord(1, 0) && check[1] != Coord(0,0)) || 
-		check[2] != Coord(1, 0) ||
-		check[3] != Coord(2, 0))
-	{
-		std::cout << "FAILED: A* solution path is incorrect" << std::endl;
+		delete search;
+		delete constrained_search;
+		delete test_world;
 		return false;
 	}
 
 	delete search;
+
+	/* Validate each path member */
+	if (
+		check[0] != Coord(0, 0) || check[1] != Coord(0, 0) ||
+		check[2] != Coord(1, 0) || check[3] != Coord(2, 0)
+		)
+	{
+		std::cout << "FAILED: A* solution path is incorrect" << std::endl;
+		delete search;
+		delete constrained_search;
+		delete test_world;
+		return false;
+	}
+
 	delete constrained_search;
 	delete test_world;
 }

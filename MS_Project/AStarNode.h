@@ -13,7 +13,7 @@ public:
 	/* Constructors */
 	AStarNode();
 	AStarNode(Position p_pos, AStarNode* p_parent, float p_cost);
-	AStarNode(AStarNode* open_node);
+	AStarNode(AStarNode* a_star_node);
 
 	/* Operator overloads */
 	bool operator<(const AStarNode& comp) const;

@@ -12,6 +12,7 @@ class AStarNode;
 class AStarNodeList;
 class Position;
 class World;
+class PathClearAStar;
 
 /*
 * Class for performing an A* search based on the world and an
@@ -74,6 +75,12 @@ private:
 	* the only thing that matters is whether or not the Position is in the hash table
 	*/
 	std::unordered_map<int, bool> constraints;
+
+	/* 
+	* Sub-search to find nodes to remove from the OPEN and CLOSED list
+	* based on a new constraint.
+	*/
+	PathClearAStar* path_clear;
 
 	/* Calculate the cost of a position */
 	float calc_cost(Position* pos);

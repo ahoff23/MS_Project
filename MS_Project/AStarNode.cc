@@ -36,22 +36,19 @@ AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
 	/* Set the cost of the node */
 	cost = p_cost;
 
+	/* The parent path leads to this node */
+	point_count = 1;
+
 	/* Make sure the parent pointer exists */
 	if (p_parent == nullptr)
-	{
-		point_count = 0;
 		return;
-	}
 
 	/* Add the parent node */
 	parent = p_parent;
-
-	/* The parent path leads to this node */
-	point_count = 1;
 }
 
 /*
-* Constructor to create a AStarNode from another AStarNode
+* Constructor to create an AStarNode from another AStarNode
 * @param open_node: The OpenNode on which this AStarNode will be based
 */
 AStarNode::AStarNode(AStarNode* a_star_node)

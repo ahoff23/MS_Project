@@ -50,7 +50,6 @@ PathClearAStar::PathClearAStar(AStar* search, Position* start_pos)
 	parent_closed_list = search->get_closed_list();
 }
 
-
 /* 
 * Clear the OPEN and CLOSED lists of descendants of start_pos 
 */

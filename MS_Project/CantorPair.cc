@@ -31,12 +31,14 @@ int CantorPair::get_int(Position* pos)
 */
 int CantorPair::get_int(Position* pos_1, Position* pos_2)
 {
+	/* Get the cantor pair from pos_1 */
+	int cantor_1 = get_int(pos_1);
+
 	/* Special case for when pos_2 is the parent and is a nullptr */
 	if (pos_2 == nullptr)
-		return -1;
+		return -1 * cantor_1;
 
-	/* Get the cantor pairing from both positions */
-	int cantor_1 = get_int(pos_1);
+	/* Get the cantor pair from pos_2 */
 	int cantor_2 = get_int(pos_2);
 
 	/* Get the final cantor pair */
@@ -50,12 +52,14 @@ int CantorPair::get_int(Position* pos_1, Position* pos_2)
 */
 int CantorPair::get_int(AStarNode* node)
 {
+	/* Get the cantor pair from the position */
+	int cantor_1 = get_int(node->get_pos());
+
 	/* If no parent exists, the hash value is -1 */
 	if (node->get_parent() == nullptr)
-		return -1;
-
-	/* Get the cantor pairing from both positions */
-	int cantor_1 = get_int(node->get_pos());
+		return -1 * cantor_1;
+	
+	/* Get the parents cantor pair */
 	int cantor_2 = get_int(node->get_parent()->get_pos());
 
 	/* Get the final cantor pair */

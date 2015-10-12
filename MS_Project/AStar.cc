@@ -39,6 +39,9 @@ AStar::AStar(Coord* p_start, Coord* p_goal, World* p_world)
 
 	/* Set the world to navigate */
 	world = p_world;
+
+	/* No new constraint */
+	path_clear = nullptr;
 }
 
 /*
@@ -58,22 +61,19 @@ AStar::AStar(AStar* p_astar, Position* new_constraint)
 
 	/* Copy both OPEN lists */
 	open_list = *(p_astar->get_open_list());
-	open_list_hash_table = new AStarNodeList(); 
-	*open_list_hash_table = *p_astar->get_open_list_hash_table();
+	open_list_hash_table = new AStarNodeList();
+	open_list_hash_table->node_copy(p_astar->get_open_list_hash_table());
 
 	/* Copy the constraints and add the new constraint */
 	constraints = *(p_astar->get_constraints());
 	int hash = CantorPair::get_int(new_constraint);
 	constraints.emplace(hash, true);
 
-	/* 
-	* Create a new CLOSED list whose parent is the closed list of
-	* the parent A* Node, p_astar
-	*/
+	/* Copy the closed list as well	*/
 	closed_list = new AStarNodeList(nullptr);
-	closed_list = p_astar->get_closed_list();
+	closed_list->node_copy(p_astar->get_closed_list());
 	/**********************************************************************
-	* UNCOMMENT THIS IF YOU WANT TO GO BACCK TO USING PARENT CLOSED LISTS
+	* UNCOMMENT THIS IF YOU WANT TO GO BACK TO USING PARENT CLOSED LISTS
 	closed_list = new AStarNodeList(p_astar->get_closed_list());
 	**********************************************************************/
 
@@ -83,8 +83,8 @@ AStar::AStar(AStar* p_astar, Position* new_constraint)
 	/* Remove descendants of new_constraint from the OPEN and CLOSED lists */
 	if (new_constraint != nullptr)
 	{
-		PathClearAStar path_clear = PathClearAStar(this, new_constraint);
-		path_clear.path_clear_a_star();
+		path_clear = new PathClearAStar(this, new_constraint);
+		path_clear->path_clear_a_star();
 	}
 }
 
@@ -106,18 +106,26 @@ void AStar::find_solution()
 	while (!open_list.empty())
 	{
 		/* Pop min cost from open_list and remove from hash table */
-		AStarNode* top = open_list.top();
+		AStarNode* heap_top = open_list.top();
 		open_list.pop();
 
-		/* Make sure the node has not been removed from the list by PathClearA* */
-		AStarNode* check_parent = top->get_parent();
-		if (check_parent != nullptr && open_list_hash_table->check_duplicate(top->get_pos(), check_parent->get_pos()) == nullptr)
-		{
-			/* Node has been removed from OPEN list via PCA*, delete it */
-			delete top;
+		/* Find the node on the OPEN list hash table */
+		AStarNodePointer* a_star_ptr;
+		AStarNode* check_parent = heap_top->get_parent();
+		if (check_parent != nullptr)
+			a_star_ptr = open_list_hash_table->check_duplicate(heap_top->get_pos(), check_parent->get_pos());
+		else
+			a_star_ptr = open_list_hash_table->check_duplicate(heap_top->get_pos(), nullptr);
 
+		/* Make sure the node has not been removed from the list by PathClearA* */
+		if (a_star_ptr == nullptr)
 			continue;
-		}
+
+		/*
+		* Use the node in the OPEN list hash table rather than from the minheap because the minheap node
+		* points to a node in the parent A* searches OPEN list hash table
+		*/
+		AStarNode* top = a_star_ptr->get_ptr();
 
 		/* Check if the node is a solution, if it is, return it */
 		if (*top->get_pos()->get_coord() == *goal)
@@ -284,4 +292,6 @@ AStar::~AStar()
 	delete open_list_hash_table;
 	delete closed_list;
 	delete goal;
+	delete path_clear;
+	delete goal_node;
 }

@@ -8,6 +8,9 @@ class AStarNodePointer
 public:
 	/* Constructors */
 	AStarNodePointer(AStarNode* p_ptr);
+
+	/* Manually set the counter of the pointer */
+	void set_counter(int p_counter);
 	
 	/* Increment and decrement the counter*/
 	void inc() { counter++; };
@@ -15,6 +18,7 @@ public:
 
 	/* Accessors */
 	int get_counter() { return counter; };
+	AStarNode* get_ptr() { return ptr; };
 
 	/* Destructor */
 	~AStarNodePointer();

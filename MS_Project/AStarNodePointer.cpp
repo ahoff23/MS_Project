@@ -12,6 +12,15 @@ AStarNodePointer::AStarNodePointer(AStarNode* p_ptr)
 }
 
 /* 
+* Manually set the counter of the pointer 
+* @param p_counter: The value to set the counter to
+*/
+void AStarNodePointer::set_counter(int p_counter)
+{
+	counter = p_counter;
+}
+
+/* 
 * Destructor 
 */
 AStarNodePointer::~AStarNodePointer()

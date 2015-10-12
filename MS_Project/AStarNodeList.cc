@@ -69,7 +69,7 @@ AStarNodePointer* AStarNodeList::check_duplicate(Position* pos, Position* pos_pa
 
 	/* Make sure this list has a parent */
 	if (parent == nullptr)
-		return false;
+		return nullptr;
 
 	/* Recursively check all parents of this list */
 	return parent->check_duplicate(hash);
@@ -143,10 +143,7 @@ void AStarNodeList::delete_node(AStarNode* node, bool del_mem)
 	{
 		/* Delete the node pointed to by the list */
 		if (del_mem == true)
-		{
-			AStarNodePointer* del = it->second;
-			delete del;
-		}
+			delete it->second;
 
 		list.erase(it);
 	}
@@ -178,6 +175,45 @@ AStarNodeList & AStarNodeList::operator=(AStarNodeList& rhs)
 
 	return rhs;
 }
+
+/* 
+* Copy by making new copies of each node in the parameter list 
+* @param copy_list: List to copy
+*/
+#include <iostream>
+void AStarNodeList::node_copy(AStarNodeList* copy_list)
+{
+	/* Clear this list */
+	list.clear();
+
+	/* Copy and place each node into this list */
+	for (auto it = copy_list->get_list()->begin(); it != copy_list->get_list()->end(); ++it)
+	{
+		AStarNode* new_node = new AStarNode(it->second->get_ptr());
+		AStarNodePointer* new_node_ptr = new AStarNodePointer(new_node);
+		new_node_ptr->set_counter(it->second->get_counter());
+		int hash = CantorPair::get_int(new_node);
+		list.emplace(hash, new_node_ptr);
+	}
+}
+
+/*
+* Print the list 
+*/
+void AStarNodeList::print_list()
+{
+	std::cout << "PRINTING LIST" << std::endl;
+	for (auto it = list.begin(); it != list.end(); ++it)
+	{
+		std::cout << *it->second->get_ptr()->get_pos()->get_coord() << " - " << it->second->get_ptr()->get_pos()->get_depth();
+
+		if (it->second->get_ptr()->get_parent() == nullptr)
+			std::cout << " - no parent" << std::endl;
+		else
+			std::cout << " - " << *it->second->get_ptr()->get_parent()->get_pos()->get_coord() << std::endl;
+	}
+}
+
 
 /* 
 * Destructor 
