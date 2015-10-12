@@ -73,6 +73,11 @@ void PathClearAStar::path_clear_a_star()
 		int len = successors.size();
 		for (int i = 0; i < len; i++)
 		{
+			/* Make sure the successor is not constrained */
+			int hash = CantorPair::get_int(&successors[i]);
+			if (constraints->find(hash) != constraints->end())
+				continue;
+
 			/* Check if the successor is in either the OPEN or CLOSED list */
 			AStarNodePointer* check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
 			AStarNodePointer* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
