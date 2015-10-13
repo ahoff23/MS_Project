@@ -446,7 +446,7 @@ bool Tests::a_star_tests()
 	Coord goal = Coord(2, 0);
 
 	/* Create the A* Search */
-	Agent* search = new Agent(&start, &goal, test_world);
+	Agent* search = new Agent(&start, &goal, test_world, "agent_name");
 
 	/* Get the solution */
 	std::stack<Coord> path = search->get_solution();
@@ -496,7 +496,7 @@ bool Tests::path_clear_a_star_tests()
 	Coord goal = Coord(2, 0);
 
 	/* Create the A* Search and find the solution */
-	Agent* search = new Agent(&start, &goal, test_world);
+	Agent* search = new Agent(&start, &goal, test_world, "agent_name");
 	search->find_solution();
 
 	/* 

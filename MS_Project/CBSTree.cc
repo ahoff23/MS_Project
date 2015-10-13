@@ -7,7 +7,7 @@
 #include "Coordinates.h"
 #include "Agent.h"
 
-/* 
+/*
 * Constructor based on files describing the world and agents
 * @param agent_file: The name of the file containing each agent
 * @param world_file: The name of the file containing the world
@@ -18,10 +18,16 @@ CBSTree::CBSTree(std::string agent_file, std::string world_file)
 	world = new World(world_file);
 
 	/* Generate array of agents */
+	generate_agents(agent_file);
 
 	/* Create the root CBSNode */
+	CBSNode* root = new CBSNode(&agents);
 	
 	/* Place the root CBSNode onto the tree */
+	tree.push(root);
+
+	/* Initialize closed CBSNode list */
+	closed_nodes = std::vector<CBSNode*>();
 }
 
 /* 
@@ -38,9 +44,9 @@ void CBSTree::generate_agents(std::string txt_file)
 	/* Coordinate as a string */
 	std::string coord_str;
 	/* Agent start coordinate */
-	Coord start;
+	Coord* start;
 	/* Agent goal coordinate */
-	Coord goal;
+	Coord* goal;
 
 	/* Open the text file */
 	std::ifstream agent_file(txt_file);
@@ -69,10 +75,6 @@ void CBSTree::generate_agents(std::string txt_file)
 		else
 			throw TerminalException("Improper agent file format.");
 		name = line.substr(0, index);
-
-		/* Make sure the next character is a '(' */
-		if (line[index] != '(')
-			throw TerminalException("Improper agent file format.");
 
 		/* Index for the end of the coord */
 		int index_2;
@@ -110,8 +112,12 @@ void CBSTree::generate_agents(std::string txt_file)
 		goal = str_to_coord(coord_str);
 
 		/* Create a new agent and add it to the vector of agents */
-		Agent* add_agent = new Agent(&start, &goal, world, name);
+		Agent* add_agent = new Agent(start, goal, world, name);
 		agents.push_back(add_agent);
+
+		/* Clean up start and goal */
+		delete start;
+		delete goal;
 	}
 }
 
@@ -120,13 +126,91 @@ void CBSTree::generate_agents(std::string txt_file)
 * @param coord_str: The string to convert to a Coord object
 * @return a Coord object based on coord_str
 */
-Coord str_to_coord(std::string coord_str)
+Coord* CBSTree::str_to_coord(std::string coord_str)
 {
+	/* Get the string's length */
+	int len = coord_str.length();
 
+	/* Make sure the first charcter is a '(' and the last character is a ')'*/
+	if (coord_str[0] != '(' || coord_str[len - 1] != ')')
+		throw TerminalException("Improper agent file format.");
+
+	/* Index for traversing the string's elements */
+	int index = 1;
+
+	/* Get the x coordinate*/
+	int x_coord = 0;
+	int add_val;
+	while (index < len && coord_str[index] != ',')
+	{
+		x_coord *= 10;
+		add_val = coord_str[index] - '0';
+
+		/* Make sure the character is a digit between 0 and 9, inclusive */
+		if (add_val < 0 || add_val > 9)
+			throw TerminalException("Improper agent file format.");
+
+		x_coord += add_val;
+		index++;
+	}
+
+	/* Make sure there is another coordinate */
+	if (index >= len - 1)
+		throw TerminalException("Improper agent file format.");
+	
+	/* Get the y coordinate */
+	index++;
+	int y_coord = 0;
+	while (index < len && coord_str[index] != ')')
+	{
+		y_coord *= 10;
+		add_val = coord_str[index] - '0';
+
+		/* Make sure the character is a digit between 0 and 9, inclusive */
+		if (add_val < 0 || add_val > 9)
+			throw TerminalException("Improper agent file format.");
+
+		y_coord += add_val;
+	}
+
+	/* Create the coordinate and return it */
+	return new Coord(x_coord, y_coord);
 }
 
-/* Get the solution of the MAPF problem */
-CBSNode* get_solution();
+/* 
+* Get the solution of the MAPF problem 
+* @return the solution CBSNode
+*/
+CBSNode* CBSTree::get_solution()
+{
+	while (true)
+	{
+		/* Get the cheapest CBS Node in the heap */
+		CBSNode* top = tree.top();
+		tree.pop();
+
+		/* First conflict agent's index and conflict position */
+		int agent_1;
+		Position conflict_1;
+
+		/* Second conflict agent's index and conflict position */
+		int agent_2;
+		Position conflict_2;
+
+		/* Get the conflicts in the node and check if a solution was found */
+		if (!top->get_conflicts(&agent_1, &conflict_1, &agent_2, &conflict_2))
+			return top;
+
+		/* No solution was found, create two new nodes to add to the heap */
+		CBSNode* add_node_1 = new CBSNode(top, agent_1, &conflict_1);
+		CBSNode* add_node_2 = new CBSNode(top, agent_2, &conflict_2);
+		tree.push(add_node_1);
+		tree.push(add_node_2);
+
+		/* Store the explored CBS Node on the closed list */
+		closed_nodes.push_back(top);
+	}
+}
 
 /* Destructor */
 CBSTree::~CBSTree()
@@ -136,7 +220,7 @@ CBSTree::~CBSTree()
 	for (int i = 0; i < num_agents; i++)
 		delete agents[i];
 
-	/* Delete all CBSNodes */
+	/* Delete all open CBSNodes */
 	CBSNode* del_node;
 	while (!tree.empty())
 	{
@@ -145,6 +229,16 @@ CBSTree::~CBSTree()
 		delete del_node;
 	}
 
+	/* Delete all closed CBS Nodes */
+	int num_closed_nodes = closed_nodes.size();
+	for (int i = 0; i < num_closed_nodes; i++)
+		delete closed_nodes[i];
+
 	/* Delete the world */
 	delete world;
+}
+
+bool Compare::operator()(const CBSNode* lhs, const CBSNode* rhs) const
+{
+	return lhs->get_cost() > rhs->get_cost();
 }
