@@ -65,3 +65,24 @@ int CantorPair::get_int(AStarNode* node)
 	/* Get the final cantor pair */
 	return (((cantor_1 + cantor_2) * (cantor_1 + cantor_2 + 1)) / 2) + cantor_2;
 }
+
+/*
+* Get the cantor pair of a coordinate and depth
+* @param coord: The coordinate
+* @param depth: The depth
+* @return a unique integer based on the coordinate and depth
+*/
+int CantorPair::get_int(Coord* coord, int depth)
+{
+	/* Special case when pos is a nullptr */
+	if (coord == nullptr)
+		return -1;
+
+	/* Get the necessary variables from the position */
+	int xcoord = coord->get_xcoord();
+	int ycoord = coord->get_ycoord();
+
+	/* Get the cantor pair */
+	int first_cantor = (((xcoord + ycoord) * (xcoord + ycoord + 1)) / 2) + ycoord;
+	return (((first_cantor + depth) * (first_cantor + depth + 1)) / 2) + depth;
+}

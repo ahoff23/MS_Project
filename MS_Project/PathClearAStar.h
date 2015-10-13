@@ -5,7 +5,7 @@
 #include <functional>
 #include <unordered_map>
 
-class AStar;
+class Agent;
 class AStarNodeList;
 class AStarNode;
 class Position;
@@ -20,7 +20,7 @@ public:
 	* to its OPEN and CLOSED hash tables to be able to remove nodes in those
 	* hash tables if they are also found in this A* Search
 	*/
-	PathClearAStar(AStar* search, Position* start_pos);
+	PathClearAStar(Agent* search, Position* start_pos);
 
 	/* Clear the OPEN and CLOSED lists of descendants of start_pos */
 	void path_clear_a_star();

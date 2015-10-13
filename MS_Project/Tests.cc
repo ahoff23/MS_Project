@@ -8,7 +8,7 @@
 #include "AStarNodeList.h"
 #include "World.h"
 #include "Exceptions.h"
-#include "AStar.h"
+#include "Agent.h"
 
 /* 
 * Runs all tests 
@@ -446,7 +446,7 @@ bool Tests::a_star_tests()
 	Coord goal = Coord(2, 0);
 
 	/* Create the A* Search */
-	AStar* search = new AStar(&start, &goal, test_world);
+	Agent* search = new Agent(&start, &goal, test_world);
 
 	/* Get the solution */
 	std::stack<Coord> path = search->get_solution();
@@ -496,7 +496,7 @@ bool Tests::path_clear_a_star_tests()
 	Coord goal = Coord(2, 0);
 
 	/* Create the A* Search and find the solution */
-	AStar* search = new AStar(&start, &goal, test_world);
+	Agent* search = new Agent(&start, &goal, test_world);
 	search->find_solution();
 
 	/* 
@@ -504,7 +504,7 @@ bool Tests::path_clear_a_star_tests()
 	* that would require the original solution change
 	*/
 	Position constraint = Position(1, 0, 1);
-	AStar* constrained_search = new AStar(search, &constraint);
+	Agent* constrained_search = new Agent(search, &constraint);
 
 	/* Get the solution */
 	std::stack<Coord> path = constrained_search->get_solution();
