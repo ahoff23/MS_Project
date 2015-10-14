@@ -212,7 +212,9 @@ CBSNode* CBSTree::get_solution()
 	}
 }
 
-/* Destructor */
+/*
+* Destructor 
+*/
 CBSTree::~CBSTree()
 {
 	/* Delete all agents */

@@ -9,6 +9,7 @@
 #include "World.h"
 #include "Exceptions.h"
 #include "Agent.h"
+#include "CBSNode.h"
 
 /* 
 * Runs all tests 
@@ -50,6 +51,11 @@ bool Tests::run_tests()
 		return false;
 	else
 		std::cout << "Path Clear A* Tests Passed." << std::endl;
+
+	if (!cbs_node_tests())
+		return false;
+	else
+		std::cout << "CBSNode Tests Passed." << std::endl;
 
 	std::cout << "All tests passed." << std::endl;
 	return true;
@@ -486,6 +492,10 @@ bool Tests::a_star_tests()
 	return true;
 }
 
+/*
+* PCA* functions
+* @return true if all tests pass or print an error and return false if one test fails.
+*/
 bool Tests::path_clear_a_star_tests()
 {
 	/* Create a world */
@@ -587,4 +597,120 @@ World* Tests::create_world()
 	std::remove(test_file);
 
 	return test_world;
+}
+
+/*
+* CBSNode Functions
+* @return true if all tests pass or print an error and return false if one test fails.
+*/
+bool Tests::cbs_node_tests()
+{
+	/* Create a world */
+	World* test_world = create_world();
+
+	/* Create first agent */
+	Coord start_1 = Coord(0, 0);
+	Coord goal_1 = Coord(2, 0);
+	std::string name_1 = "Agent 1";
+	Agent* a_1 = new Agent(&start_1, &goal_1, test_world, name_1);
+
+	/* Create second agent */
+	Coord start_2 = Coord(2, 0);
+	Coord goal_2 = Coord(0, 0);
+	std::string name_2 = "Agent 2";
+	Agent* a_2 = new Agent(&start_2, &goal_2, test_world, name_2);
+
+	/* Create a vector containing both agents */
+	std::vector<Agent*> agents = std::vector<Agent*>();
+	agents.push_back(a_1);
+	agents.push_back(a_2);
+
+	/* Create a CBSNode */
+	CBSNode* node = new CBSNode(&agents);
+
+	/* Create variables to store conflict information */
+	int agent_1;
+	Position conflict_1;
+	int agent_2;
+	Position conflict_2;
+
+	/* Check for a conflict in the node */
+	bool found_conflict = node->get_conflicts(&agent_1,&conflict_1,&agent_2,&conflict_2);
+
+	/* Make sure a conflict is found */
+	if (found_conflict == false)
+	{
+		std::cout << "FAILED: No CBSNode conflict found." << std::endl;
+		delete a_1;
+		delete a_2;
+		delete node;
+		return false;
+	}
+
+	/* Make sure the conflict found is correct */
+	if (
+		conflict_1.get_coord()->get_xcoord() != 1 ||
+		conflict_1.get_coord()->get_ycoord() != 0 ||
+		conflict_2.get_coord()->get_xcoord() != 1 ||
+		conflict_2.get_coord()->get_ycoord() != 0 ||
+		conflict_1.get_depth() != 1 || conflict_2.get_depth() != 1
+		)
+	{
+		std::cout << "FAILED: Incorrect CBSNode conflict." << std::endl;
+		delete a_1;
+		delete a_2;
+		delete node;
+		return false;
+	}
+
+	/* Create a new CBSNode based on the prior CBSNode with a new conflict */
+	CBSNode* conflict_node = new CBSNode(node, agent_1, &conflict_1);
+
+	/* Check for a conflict in the node */
+	found_conflict = conflict_node->get_conflicts(&agent_1, &conflict_1, &agent_2, &conflict_2);
+
+	/* Make sure a conflict is found */
+	if (found_conflict == false)
+	{
+		std::cout << "FAILED: No second CBSNode conflict found." << std::endl;
+		delete a_1;
+		delete a_2;
+		delete node;
+		delete conflict_node;
+		return false;
+	}
+
+	int x1 = conflict_1.get_coord()->get_xcoord();
+	int y1 = conflict_1.get_coord()->get_ycoord();
+	int d1 = conflict_1.get_depth();
+	int x2 = conflict_2.get_coord()->get_xcoord();
+	int y2 = conflict_2.get_coord()->get_ycoord();
+	int d2 = conflict_2.get_depth();
+
+
+	/* Make sure the conflict found is correct */
+	if (
+		conflict_1.get_coord()->get_xcoord() != 1 ||
+		conflict_1.get_coord()->get_ycoord() != 0 ||
+		conflict_2.get_coord()->get_xcoord() != 0 ||
+		conflict_2.get_coord()->get_ycoord() != 0 ||
+		conflict_1.get_depth() != 2 || conflict_2.get_depth() != 2
+		)
+	{
+		std::cout << "FAILED: Incorrect second CBSNode conflict." << std::endl;
+		delete a_1;
+		delete a_2;
+		delete node;
+		delete conflict_node;
+		return false;
+	}
+
+	/* Clean up dynamic memory */
+	delete a_1;
+	delete a_2;
+	delete node;
+	delete conflict_node;
+
+	/* All tests passed */
+	return true;
 }

@@ -16,10 +16,6 @@ public:
 	/* Find one (or two) conflict positions between two agents */
 	bool get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Position* conflict_2);
 
-	/* Operator overloads */
-	bool operator<(CBSNode* comp) const;
-	bool operator>(CBSNode* comp) const;
-
 	/* Accessors */
 	int get_num_agents() { return agents.size(); };
 	int get_cost() const { return cost; };
@@ -27,7 +23,6 @@ public:
 
 	/* Destructor */
 	~CBSNode();
-
 private:
 	/* Vector of pointers to agents */
 	std::vector<Agent*> agents;

@@ -150,22 +150,6 @@ bool CBSNode::get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Po
 	return false;
 }
 
-/*
-* Comparison operator for the CBSNode
-*/
-bool CBSNode::operator<(CBSNode* comp) const
-{
-	return cost < comp->cost;
-}
-
-/*
-* Comparison operator for the CBSNode
-*/
-bool CBSNode::operator>(CBSNode* comp) const
-{
-	return cost > comp->cost;
-}
-
 /* 
 * Destructor 
 */

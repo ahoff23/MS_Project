@@ -20,6 +20,7 @@ public:
 	static bool world_tests();
 	static bool a_star_tests();
 	static bool path_clear_a_star_tests();
+	static bool cbs_node_tests();
 	
 	/* Non-automated tests */
 	static void print_world_test(std::string test_file);
