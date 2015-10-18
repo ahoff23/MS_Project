@@ -692,7 +692,7 @@ bool Tests::cbs_node_tests()
 	if (
 		conflict_1.get_coord()->get_xcoord() != 1 ||
 		conflict_1.get_coord()->get_ycoord() != 0 ||
-		conflict_2.get_coord()->get_xcoord() != 0 ||
+		conflict_2.get_coord()->get_xcoord() != 2 ||
 		conflict_2.get_coord()->get_ycoord() != 0 ||
 		conflict_1.get_depth() != 2 || conflict_2.get_depth() != 2
 		)

@@ -5,6 +5,8 @@
 #include "Coordinates.h";
 #include "CantorPair.h"
 
+#include <iostream>
+
 /* 
 * Constructor for the first node in the CBSTree
 * (i.e. not based off of a parent CBSNode)
@@ -78,18 +80,21 @@ bool CBSNode::get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Po
 	/* Hash table of agent numbers based on a coordinate and depth */
 	std::unordered_map<int, int> occupied_coords;
 
+	/* Path of an individual agent */
+	std::stack<Coord> path;
+
 	/* Iterate through the path of each agent */
 	int num_agents = agents.size();
 	for (int i = 0; i < num_agents; i++)
 	{
 		/* Get the path of the agent */
-		std::stack<Coord> path = agents[i]->get_solution();
+		path = agents[i]->get_solution();
 
 		/* Initialize the depth */
 		depth = 0;
 
 		/* Get the coordinate and hash of the start coordinate */		
-		Coord prev_coord = path.top();
+		prev_coord = path.top();
 		prev_hash = CantorPair::get_int(&prev_coord, depth);
 		path.pop();
 
