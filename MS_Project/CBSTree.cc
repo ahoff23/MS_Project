@@ -65,16 +65,12 @@ void CBSTree::generate_agents(std::string txt_file)
 		while (index < len && line[index] != ' ')
 			index++;
 
-		/* Make sure a space was found */
-		if (index == len)
-			throw TerminalException("Improper agent file format.");
-
 		/* Get the name of the agent */
 		if (index + 1 < len)
 			index++;
 		else
 			throw TerminalException("Improper agent file format.");
-		name = line.substr(0, index);
+		name = line.substr(0, index - 1);
 
 		/* Index for the end of the coord */
 		int index_2;
@@ -84,7 +80,7 @@ void CBSTree::generate_agents(std::string txt_file)
 			throw TerminalException("Improper agent file format.");
 
 		/* Get the substring containing the start coord */
-		while (line[index_2] != ')' && line[index_2] == ')')
+		while (line[index_2] != ')' && index_2 < len)
 			index_2++;
 
 		/* Make sure a ')' was found */
@@ -171,6 +167,9 @@ Coord* CBSTree::str_to_coord(std::string coord_str)
 			throw TerminalException("Improper agent file format.");
 
 		y_coord += add_val;
+		
+		/* Add next digit */
+		index++;
 	}
 
 	/* Create the coordinate and return it */

@@ -12,14 +12,16 @@ public:
 	/* Constructors */
 	CBSNode(std::vector<Agent*>* p_agents);
 	CBSNode(CBSNode* parent_node, int agent_num, Position* conflict);
-
 	/* Find one (or two) conflict positions between two agents */
 	bool get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Position* conflict_2);
+
+	/* Operators */
+	CBSNode & operator=(CBSNode& rhs);
 
 	/* Accessors */
 	int get_num_agents() { return agents.size(); };
 	int get_cost() const { return cost; };
-	std::vector<Agent*> get_agents() { return agents; };
+	std::vector<Agent*>* get_agents() { return &agents; };
 
 	/* Destructor */
 	~CBSNode();

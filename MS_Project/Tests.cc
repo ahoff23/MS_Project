@@ -10,6 +10,7 @@
 #include "Exceptions.h"
 #include "Agent.h"
 #include "CBSNode.h"
+#include "CBSTree.h"
 
 /* 
 * Runs all tests 
@@ -56,6 +57,11 @@ bool Tests::run_tests()
 		return false;
 	else
 		std::cout << "CBSNode Tests Passed." << std::endl;
+
+	if (!cbs_tree_tests())
+		return false;
+	else
+		std::cout << "CBSTree Tests Passed." << std::endl;
 
 	std::cout << "All tests passed." << std::endl;
 	return true;
@@ -567,6 +573,10 @@ bool Tests::path_clear_a_star_tests()
 	delete test_world;
 }
 
+/* 
+* Create a 1x3 world with no obstacles 
+* @return a pointer to a 1x3 world with no obstacles 
+*/
 World* Tests::create_world()
 {
 	/* Pointer to worlds being tested */
@@ -712,5 +722,132 @@ bool Tests::cbs_node_tests()
 	delete conflict_node;
 
 	/* All tests passed */
+	return true;
+}
+
+
+/*
+* CBSTree Functions
+* @return true if all tests pass or print an error and return false if one test fails.
+*/
+bool Tests::cbs_tree_tests()
+{
+	/* Create world file */
+	std::string world_file = create_world_file();
+
+	/* Create agent file */
+	std::string agent_file = create_agent_file();
+
+	/* Create the CBSTree */
+	CBSTree* tree = new CBSTree(agent_file, world_file);
+
+	/* Get the solution */
+	CBSNode* solution_node = tree->get_solution();
+
+	/* Get the solution agents */
+	std::vector<Agent*> solution_agents = *solution_node->get_agents();
+
+	/* Get the solutions for each agent */
+	std::stack<Coord> sol_0 = solution_agents[0]->get_solution();
+	std::stack<Coord> sol_1 = solution_agents[1]->get_solution();
+	std::stack<Coord> sol_2 = solution_agents[2]->get_solution();
+
+	/* Check the solution path for the first agent */
+	Coord c0 = Coord(0, 0);
+	Coord c1 = Coord(1, 1);
+	Coord c2 = Coord(2, 2);
+	if (Tests::check_top_coord(sol_0, &c0) == false)
+		return false;
+	if (Tests::check_top_coord(sol_0, &c1) == false)
+		return false;
+	if (Tests::check_top_coord(sol_0, &c2) == false)
+		return false;
+
+	/* Check the solution path for the second agent */
+	c0 = Coord(1, 0);
+	c1 = Coord(2, 1);
+	c2 = Coord(1, 2);
+	if (Tests::check_top_coord(sol_1, &c0) == false)
+		return false;
+	if (Tests::check_top_coord(sol_1, &c1) == false)
+		return false;
+	if (Tests::check_top_coord(sol_1, &c2) == false)
+		return false;
+
+	/* Check the solution path for the third agent */
+	c0 = Coord(2, 2);
+	c1 = Coord(1, 2);
+	c2 = Coord(0, 1);
+	if (Tests::check_top_coord(sol_2, &c0) == false)
+		return false;
+	if (Tests::check_top_coord(sol_2, &c1) == false)
+		return false;
+	if (Tests::check_top_coord(sol_2, &c2) == false)
+		return false;
+
+	/* Remove the test files */
+	std::remove(world_file.c_str());
+	std::remove(agent_file.c_str());
+
+	/* All tests passed */
+	return true;
+}
+
+/*
+* Create a 3x3 world with no obstacles
+* @return a string file name for the newly created world file
+*/
+std::string Tests::create_world_file()
+{
+	/* Name of the world file */
+	char test_file[] = "Worlds/test_file.txt";
+
+	/* Create the world */
+	std::ofstream file(test_file);
+	file << "111\n";
+	file << "111\n";
+	file << "111\n";
+	file.close();
+
+	return std::string(test_file);
+}
+
+/*
+* Create a file containing several agents 
+* @return a string file name for the newly created agent file
+*/
+std::string Tests::create_agent_file()
+{
+	/* Name of the agent file */
+	char test_file[] = "Agents/agent_file.txt";
+
+	/* Create 3 agents */
+	std::ofstream file(test_file);
+	file << "Agent_1 (0,0) (2,2)\n";
+	file << "Agent_2 (1,0) (1,2)\n";
+	file << "Agent_3 (2,2) (0,1)\n";
+	file.close();
+
+	return std::string(test_file);
+}
+
+/* 
+* Check that the next coordinate in the path is correct
+* @param path: The path to check
+* @param check_coord: The coordinate the next path coordinate must be equal to
+* @return true if the next path coordinate equals check_coord, false otherwise
+*/
+bool Tests::check_top_coord(std::stack<Coord>& path, Coord* check_coord)
+{
+	/* Make sure there is another element in the path and that it is correct */
+	if (path.size() == 0 || path.top() != *check_coord)
+	{
+		std::cout << "FAILED: CBSTree solution not correct." << std::endl;
+		return false;
+	}
+
+	/* Move on to the next coordinate in the path */
+	path.pop();
+
 	return true;
 }

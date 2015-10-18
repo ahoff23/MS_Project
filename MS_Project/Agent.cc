@@ -272,6 +272,11 @@ void Agent::print_solution()
 	/* Get the solution */
 	std::stack<Coord> path = get_solution();
 
+	/* Print the agent's name */
+	std::cout << "*********************" << std::endl;
+	std::cout << name << std::endl;
+	std::cout << "*********************" << std::endl;
+
 	/* Make sure the solution is correct */
 	while (!path.empty())
 	{

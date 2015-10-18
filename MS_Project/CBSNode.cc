@@ -5,8 +5,6 @@
 #include "Coordinates.h";
 #include "CantorPair.h"
 
-#include <iostream>
-
 /* 
 * Constructor for the first node in the CBSTree
 * (i.e. not based off of a parent CBSNode)
@@ -35,7 +33,7 @@ CBSNode::CBSNode(std::vector<Agent*>* p_agents)
 CBSNode::CBSNode(CBSNode* parent_node, int agent_num, Position* conflict)
 {
 	/* Set the list of agents to point to the parent's list of agents */
-	agents = parent_node->get_agents();
+	agents = *parent_node->get_agents();
 
 	/* Create a new agent with a new conflict */
 	Agent* updated_agent = new Agent(agents[agent_num], conflict);
@@ -153,6 +151,23 @@ bool CBSNode::get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Po
 	
 	/* No conflict was found */
 	return false;
+}
+
+/* 
+* Equals operator
+* @param rhs: The CBSNode to copy
+* @return the copied CBSNode
+*/
+CBSNode & CBSNode::operator=(CBSNode& rhs)
+{
+	/* Copy CBSNode data by value */
+	agents = *rhs.get_agents();
+	cost = rhs.get_cost();
+
+	/* No new nodes generated in this node */
+	new_agent_num = -1;
+
+	return rhs;
 }
 
 /* 
