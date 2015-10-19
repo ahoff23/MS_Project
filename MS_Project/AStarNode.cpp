@@ -7,10 +7,12 @@
 AStarNode::AStarNode()
 {
 	/* Set the position as the default position */
-	pos = Position();
+	Position* temp = new Position();
+	pos = *temp;
+	delete temp;
 
 	/* No parent for this node */
-	parent = nullptr;
+	parent = NULL;
 
 	/* 
 	* Default cost is -1 so the user can confirm this node has
@@ -25,7 +27,7 @@ AStarNode::AStarNode()
 /*
 * Constructor with position and one parent
 * @param p_pos: Position of the node
-* @param p_parent: Parent of this node, nullptr if no parent exists
+* @param p_parent: Parent of this node, NULL if no parent exists
 * @param p_cost: The cost of the node
 */
 AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
@@ -40,7 +42,7 @@ AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
 	point_count = 1;
 
 	/* Make sure the parent pointer exists */
-	if (p_parent == nullptr)
+	if (p_parent == NULL)
 		return;
 
 	/* Add the parent node */

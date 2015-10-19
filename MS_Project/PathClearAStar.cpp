@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "PathClearAStar.h"
 #include "Agent.h"
 #include "AStarNode.h"
@@ -24,17 +26,17 @@ PathClearAStar::PathClearAStar(Agent* search, Position* start_pos)
 	goal = search->get_goal();
 
 	/* OPEN list in the form of a min heap */
-	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode>>();
+	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
 
 	/* OPEN list in the form of a hash table */
-	open_list_hash_table = new AStarNodeList(nullptr);
+	open_list_hash_table = new AStarNodeList(NULL);
 
 	/* Place the root on the OPEN list */
-	AStarNode* root = new AStarNode(*start_pos, nullptr, calc_cost(start_pos));
+	AStarNode* root = new AStarNode(*start_pos, NULL, calc_cost(start_pos));
 	open_list.emplace(root);
 
 	/* CLOSED list for the search in the form of a hash table */
-	closed_list = new AStarNodeList(nullptr);
+	closed_list = new AStarNodeList(NULL);
 
 	/*
 	* Hash table for the conflicts at this node. The key is the cantor pair of the Position
@@ -83,7 +85,7 @@ void PathClearAStar::path_clear_a_star()
 			AStarNodePointer* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
 
 			/* If the successor is not a duplicate, add it to the OPEN list */
-			if (check_open_list == nullptr && check_closed_list == nullptr)
+			if (check_open_list == NULL && check_closed_list == NULL)
 			{
 				/* Create a new node and add it to the OPEN list (both heap and hash table) */
 				AStarNode* add_node = new AStarNode(successors[i], top, calc_cost(&successors[i]));
@@ -123,16 +125,16 @@ void PathClearAStar::get_successors(Position* pos, std::vector<Position>* succes
 	const int NUM_SUCCESSORS = 9;
 
 	/* Create positions for each possible successor */
-	Position possible_successors[NUM_SUCCESSORS];
-	possible_successors[0] = Position(x_coord + 1, y_coord, depth);
-	possible_successors[1] = Position(x_coord + 1, y_coord + 1, depth);
-	possible_successors[2] = Position(x_coord + 1, y_coord - 1, depth);
-	possible_successors[3] = Position(x_coord - 1, y_coord, depth);
-	possible_successors[4] = Position(x_coord - 1, y_coord + 1, depth);
-	possible_successors[5] = Position(x_coord - 1, y_coord - 1, depth);
-	possible_successors[6] = Position(x_coord, y_coord, depth);
-	possible_successors[7] = Position(x_coord, y_coord + 1, depth);
-	possible_successors[8] = Position(x_coord, y_coord - 1, depth);
+	Position* possible_successors[NUM_SUCCESSORS];
+	possible_successors[0] = new Position(x_coord + 1, y_coord, depth);
+	possible_successors[1] = new Position(x_coord + 1, y_coord + 1, depth);
+	possible_successors[2] = new Position(x_coord + 1, y_coord - 1, depth);
+	possible_successors[3] = new Position(x_coord - 1, y_coord, depth);
+	possible_successors[4] = new Position(x_coord - 1, y_coord + 1, depth);
+	possible_successors[5] = new Position(x_coord - 1, y_coord - 1, depth);
+	possible_successors[6] = new Position(x_coord, y_coord, depth);
+	possible_successors[7] = new  Position(x_coord, y_coord + 1, depth);
+	possible_successors[8] = new Position(x_coord, y_coord - 1, depth);
 
 	/*
 	* Add each possible successor if it is an existing coordinate and
@@ -141,14 +143,18 @@ void PathClearAStar::get_successors(Position* pos, std::vector<Position>* succes
 	for (int i = 0; i < NUM_SUCCESSORS; i++)
 	{
 		/* Get the hash of the position */
-		int hash = CantorPair::get_int(&possible_successors[i]);
+		int hash = CantorPair::get_int(possible_successors[i]);
 
 		if (
-			world->check_coord(possible_successors[i].get_coord()) &&
+			world->check_coord(possible_successors[i]->get_coord()) &&
 			constraints->find(hash) == constraints->end()
 			)
-			successors->push_back(possible_successors[i]);
+			successors->push_back(*possible_successors[i]);
 	}
+
+	/* Possible successors are pushed to successors by value, no need to keep them */
+	for (int i = 0; i < NUM_SUCCESSORS; i++)
+		delete possible_successors[i];
 }
 
 /*

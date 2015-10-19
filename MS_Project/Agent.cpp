@@ -24,17 +24,17 @@ Agent::Agent(Coord* p_start, Coord* p_goal, World* p_world, std::string p_name)
 	goal = new Coord(p_goal);
 
 	/* No goal node is found initially */
-	goal_node = nullptr;
+	goal_node = NULL;
 
 	/* Initialize lists and hash tables */
-	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode>>();
-	open_list_hash_table = new AStarNodeList(nullptr);
-	closed_list = new AStarNodeList(nullptr);
-	constraints = std::unordered_map<int, bool>();
+	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
+	open_list_hash_table = new AStarNodeList(NULL);
+	closed_list = new AStarNodeList(NULL);
+	constraints = std::unordered_map<int, bool, hash_struct>();
 
 	/* Place the root into the OPEN list */
 	Position start_pos = Position(p_start, 0);
-	AStarNode* start_node = new AStarNode(start_pos, nullptr, calc_cost(&start_pos));
+	AStarNode* start_node = new AStarNode(start_pos, NULL, calc_cost(&start_pos));
 	open_list.emplace(start_node);
 	open_list_hash_table->add_node(start_node);
 
@@ -42,7 +42,7 @@ Agent::Agent(Coord* p_start, Coord* p_goal, World* p_world, std::string p_name)
 	world = p_world;
 
 	/* No new constraint */
-	path_clear = nullptr;
+	path_clear = NULL;
 
 	/* Set the name of the agent */
 	name = p_name;
@@ -61,7 +61,7 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 	goal = new Coord(*(p_agent->get_goal()));
 
 	/* No goal node is found initially */
-	goal_node = nullptr;
+	goal_node = NULL;
 
 	/* Copy both OPEN lists */
 	open_list = *(p_agent->get_open_list());
@@ -74,7 +74,7 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 	constraints.emplace(hash, true);
 
 	/* Copy the closed list as well	*/
-	closed_list = new AStarNodeList(nullptr);
+	closed_list = new AStarNodeList(NULL);
 	closed_list->node_copy(p_agent->get_closed_list());
 	/**********************************************************************
 	* UNCOMMENT THIS IF YOU WANT TO GO BACK TO USING PARENT CLOSED LISTS
@@ -85,7 +85,7 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 	world = p_agent->get_world();
 
 	/* Remove descendants of new_constraint from the OPEN and CLOSED lists */
-	if (new_constraint != nullptr)
+	if (new_constraint != NULL)
 	{
 		path_clear = new PathClearAStar(this, new_constraint);
 		path_clear->path_clear_a_star();
@@ -119,13 +119,13 @@ void Agent::find_solution()
 		/* Find the node on the OPEN list hash table */
 		AStarNodePointer* a_star_ptr;
 		AStarNode* check_parent = heap_top->get_parent();
-		if (check_parent != nullptr)
+		if (check_parent != NULL)
 			a_star_ptr = open_list_hash_table->check_duplicate(heap_top->get_pos(), check_parent->get_pos());
 		else
-			a_star_ptr = open_list_hash_table->check_duplicate(heap_top->get_pos(), nullptr);
+			a_star_ptr = open_list_hash_table->check_duplicate(heap_top->get_pos(), NULL);
 
 		/* Make sure the node has not been removed from the list by PathClearA* */
-		if (a_star_ptr == nullptr)
+		if (a_star_ptr == NULL)
 			continue;
 
 		/*
@@ -163,7 +163,7 @@ void Agent::find_solution()
 			AStarNodePointer* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
 			
 			/* If the successor is not a duplicate, add it to the OPEN list */
-			if (check_open_list == nullptr && check_closed_list == nullptr)
+			if (check_open_list == NULL && check_closed_list == NULL)
 			{
 				/* Create a new node and add it to the OPEN list (both heap and hash table) */
 				AStarNode* add_node = new AStarNode(successors[i], top, calc_cost(&successors[i]));
@@ -174,9 +174,9 @@ void Agent::find_solution()
 				check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
 				check_open_list->inc();
 			}
-			else if (check_open_list != nullptr)
+			else if (check_open_list != NULL)
 				check_open_list->inc();
-			else if (check_closed_list != nullptr)
+			else if (check_closed_list != NULL)
 				check_closed_list->inc();
 		}
 
@@ -207,16 +207,16 @@ void Agent::get_successors(Position* pos, std::vector<Position>* successors)
 	const int NUM_SUCCESSORS = 9;
 
 	/* Create positions for each possible successor */
-	Position possible_successors[NUM_SUCCESSORS];
-	possible_successors[0] = Position(x_coord + 1, y_coord, depth);
-	possible_successors[1] = Position(x_coord + 1, y_coord + 1, depth);
-	possible_successors[2] = Position(x_coord + 1, y_coord - 1, depth);
-	possible_successors[3] = Position(x_coord - 1, y_coord, depth);
-	possible_successors[4] = Position(x_coord - 1, y_coord + 1, depth);
-	possible_successors[5] = Position(x_coord - 1, y_coord - 1, depth);
-	possible_successors[6] = Position(x_coord, y_coord, depth);
-	possible_successors[7] = Position(x_coord, y_coord + 1, depth);
-	possible_successors[8] = Position(x_coord, y_coord - 1, depth);
+	Position* possible_successors[NUM_SUCCESSORS];
+	possible_successors[0] = new Position(x_coord + 1, y_coord, depth);
+	possible_successors[1] = new Position(x_coord + 1, y_coord + 1, depth);
+	possible_successors[2] = new Position(x_coord + 1, y_coord - 1, depth);
+	possible_successors[3] = new Position(x_coord - 1, y_coord, depth);
+	possible_successors[4] = new Position(x_coord - 1, y_coord + 1, depth);
+	possible_successors[5] = new Position(x_coord - 1, y_coord - 1, depth);
+	possible_successors[6] = new Position(x_coord, y_coord, depth);
+	possible_successors[7] = new Position(x_coord, y_coord + 1, depth);
+	possible_successors[8] = new Position(x_coord, y_coord - 1, depth);
 
 	/* 
 	* Add each possible successor if it is an existing coordinate, 
@@ -225,14 +225,18 @@ void Agent::get_successors(Position* pos, std::vector<Position>* successors)
 	for (int i = 0; i < NUM_SUCCESSORS; i++)
 	{
 		/* Get the hash of the position */
-		int hash = CantorPair::get_int(&possible_successors[i]);
+		int hash = CantorPair::get_int(possible_successors[i]);
 
 		if (
-			world->check_coord(possible_successors[i].get_coord()) &&
+			world->check_coord(possible_successors[i]->get_coord()) &&
 			constraints.find(hash) == constraints.end()
 			)
-			successors->push_back(possible_successors[i]);
+			successors->push_back(*possible_successors[i]);
 	}
+
+	/* Delete all possible successors (pushed by to return list of successors by value) */
+	for (int i = 0; i < NUM_SUCCESSORS; i++)
+		delete possible_successors[i];
 }
 
 /*
@@ -246,7 +250,7 @@ std::stack<Coord> Agent::get_solution()
 	std::stack<Coord> path = std::stack<Coord>();
 
 	/* Find the solution if it has not been found yet */
-	if (goal_node == nullptr)
+	if (goal_node == NULL)
 		find_solution();
 
 	/* Push the goal node's Coord object onto the stack */
@@ -255,7 +259,7 @@ std::stack<Coord> Agent::get_solution()
 	/* Create a node pointer to traverse the nodes parents */
 	AStarNode* trav = goal_node->get_parent();
 
-	while (trav != nullptr)
+	while (trav != NULL)
 	{
 		path.push(trav->get_pos()->get_coord());
 		trav = trav->get_parent();
@@ -285,6 +289,32 @@ void Agent::print_solution()
 	}
 }
 
+/* 
+* Print the solution to a file 
+* @param file: The file stream to print to
+*/
+void Agent::file_print_solution(std::ofstream& file)
+{
+	/* Get the solution */
+	std::stack<Coord> path = get_solution();
+
+	/* Print the agent's name */
+	file << "*********************\n";
+	file << name;
+	file << "\n*********************\n";
+
+	/* Make sure the solution is correct */
+	while (!path.empty())
+	{
+		file << path.top();
+		file << "\n";
+		path.pop();
+	}
+
+	/* Add an extra line for formatting */
+	file << "\n";
+}
+
 /*
 * Calculate the cost of a position
 * @param pos: The position to calculate the cost for
@@ -308,7 +338,7 @@ float Agent::calc_cost(Position* pos)
 int Agent::get_cost()
 {
 	/* Find the solution if it has not been found yet */
-	if (goal_node == nullptr)
+	if (goal_node == NULL)
 		find_solution();
 
 	/* Create a node pointer to traverse the nodes parents */
@@ -318,7 +348,7 @@ int Agent::get_cost()
 	int cost = 1;
 
 	/* Backtrack through each coordinate in the path */
-	while (trav != nullptr)
+	while (trav != NULL)
 	{
 		trav = trav->get_parent();
 		cost++;

@@ -7,6 +7,17 @@
 #include "Coordinates.h"
 #include "Agent.h"
 
+/* 
+* Operator for comparing two CBSNodes in the Compare struct for use in priority queue (minheap)
+* @param lhs: The first CBSNode to compare
+* @param rhs: The second CBSNode to compare
+* @return true if lhs' cost is less than rhs' cost, false otherwise
+*/
+bool Compare::operator()(const CBSNode* lhs, const CBSNode* rhs) const
+{
+	return lhs->get_cost() > rhs->get_cost();
+}
+
 /*
 * Constructor based on files describing the world and agents
 * @param agent_file: The name of the file containing each agent
@@ -57,6 +68,10 @@ void CBSTree::generate_agents(std::string txt_file)
 	std::string line;
 	while (getline(agent_file, line))
 	{
+		/* Make sure the line isn't commented out */
+		if (line[0] == '#')
+			continue;
+
 		/* Get the line length */
 		len = line.length();
 
@@ -190,25 +205,56 @@ CBSNode* CBSTree::get_solution()
 
 		/* First conflict agent's index and conflict position */
 		int agent_1;
-		Position conflict_1;
+		Position* conflict_1 = new Position();
 
 		/* Second conflict agent's index and conflict position */
 		int agent_2;
-		Position conflict_2;
+		Position* conflict_2 = new Position();
 
 		/* Get the conflicts in the node and check if a solution was found */
-		if (!top->get_conflicts(&agent_1, &conflict_1, &agent_2, &conflict_2))
+		if (!top->get_conflicts(&agent_1, conflict_1, &agent_2, conflict_2))
 			return top;
 
 		/* No solution was found, create two new nodes to add to the heap */
-		CBSNode* add_node_1 = new CBSNode(top, agent_1, &conflict_1);
-		CBSNode* add_node_2 = new CBSNode(top, agent_2, &conflict_2);
+		CBSNode* add_node_1 = new CBSNode(top, agent_1, conflict_1);
+		CBSNode* add_node_2 = new CBSNode(top, agent_2, conflict_2);
 		tree.push(add_node_1);
 		tree.push(add_node_2);
+
+		/* Conflict pointers no longer necessary (copied by value when creating new CBSNodes) */
+		delete conflict_1;
+		delete conflict_2;
 
 		/* Store the explored CBS Node on the closed list */
 		closed_nodes.push_back(top);
 	}
+}
+
+
+/* 
+* Print the solution of the tree to an output file
+*/
+void CBSTree::file_print_solution()
+{
+	/* Get the solution */
+	CBSNode* solution_node = get_solution();
+
+	/* Get the solution agents */
+	std::vector<Agent*> solution_agents = *solution_node->get_agents();
+
+	/* Name of the output file */
+	char out_file[] = "Output/solution.txt";
+
+	/* Open the output file */
+	std::ofstream file(out_file);
+
+	/* Print each agent's solution in the output file */
+	int len = solution_agents.size();
+	for (int i = 0; i < len; i++)
+		solution_agents[i]->file_print_solution(file);
+
+	/* Close the output file */
+	file.close();
 }
 
 /*
@@ -237,9 +283,4 @@ CBSTree::~CBSTree()
 
 	/* Delete the world */
 	delete world;
-}
-
-bool Compare::operator()(const CBSNode* lhs, const CBSNode* rhs) const
-{
-	return lhs->get_cost() > rhs->get_cost();
 }

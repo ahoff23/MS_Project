@@ -20,6 +20,10 @@ public:
 	friend std::ostream & operator<<(std::ostream& out, Coord& coord);
 	bool operator==(Coord& rhs);
 
+	/* Setter functions */
+	void set_x(int x) { xcoord = x; };
+	void set_y(int y) { ycoord = y; };
+
 	/* Access functions */
 	int get_xcoord() { return xcoord; };
 	int get_ycoord() { return ycoord; };
@@ -48,6 +52,11 @@ public:
 	/* Operator overloads */
 	Position & operator=(Position& rhs);
 	bool operator==(Position& rhs);
+
+	/* Set functions */
+	void set_x(int x) { coord.set_x(x); };
+	void set_y(int y) { coord.set_y(y); };
+	void set_depth(int d) { depth = d; };
 
 	/* Access functions */
 	Coord * get_coord() { return &coord; };

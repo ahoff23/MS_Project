@@ -1,7 +1,6 @@
 #ifndef ASTARNODE_H
 #define ASTARNODE_H
 
-#include <unordered_map>
 #include "Coordinates.h"
 
 /*

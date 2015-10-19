@@ -9,8 +9,8 @@
 */
 AStarNodeList::AStarNodeList()
 {
-	list = std::unordered_map<int, AStarNodePointer*>();
-	parent = nullptr;
+	list = std::unordered_map<int, AStarNodePointer*, hash_struct>();
+	parent = NULL;
 }
 
 /* 
@@ -23,14 +23,14 @@ AStarNodeList::AStarNodeList()
 */
 AStarNodeList::AStarNodeList(AStarNodeList* p_parent)
 {
-	list = std::unordered_map<int, AStarNodePointer*>();
+	list = std::unordered_map<int, AStarNodePointer*, hash_struct>();
 	parent = p_parent;
 }
 
 /* 
 * Check if a position is in the list 
 * @param node: The A* node to check the list for
-* @return the A* Node Pointer if it is in the list, nullptr otherwise
+* @return the A* Node Pointer if it is in the list, NULL otherwise
 */
 AStarNodePointer* AStarNodeList::check_duplicate(AStarNode* node)
 {
@@ -43,7 +43,7 @@ AStarNodePointer* AStarNodeList::check_duplicate(AStarNode* node)
 		return it->second;
 
 	/* Make sure this list has a parent */
-	if (parent == nullptr)
+	if (parent == NULL)
 		return false;
 
 	/* Recursively check all parents of this list */
@@ -55,7 +55,7 @@ AStarNodePointer* AStarNodeList::check_duplicate(AStarNode* node)
 * @param pos: The position to check the list for
 * @param pos_parent: The parent to check the list for
 * (the hash is composed of both pos and parent)
-* @return the A* Node Pointer if it is in the list, nullptr otherwise
+* @return the A* Node Pointer if it is in the list, NULL otherwise
 */
 AStarNodePointer* AStarNodeList::check_duplicate(Position* pos, Position* pos_parent)
 {
@@ -68,8 +68,8 @@ AStarNodePointer* AStarNodeList::check_duplicate(Position* pos, Position* pos_pa
 		return it->second;
 
 	/* Make sure this list has a parent */
-	if (parent == nullptr)
-		return nullptr;
+	if (parent == NULL)
+		return NULL;
 
 	/* Recursively check all parents of this list */
 	return parent->check_duplicate(hash);
@@ -78,7 +78,7 @@ AStarNodePointer* AStarNodeList::check_duplicate(Position* pos, Position* pos_pa
 /*
 * Check if a position is in the list
 * @param hash: The hash of the position being sought
-* @return the A* Node Pointer if it is in the list, nullptr otherwise
+* @return the A* Node Pointer if it is in the list, NULL otherwise
 */
 AStarNodePointer* AStarNodeList::check_duplicate(int hash)
 {
@@ -88,8 +88,8 @@ AStarNodePointer* AStarNodeList::check_duplicate(int hash)
 		return it->second;
 
 	/* Make sure this list has a parent */
-	if (parent == nullptr)
-		return nullptr;
+	if (parent == NULL)
+		return NULL;
 
 	/* Recursively check all parents of this list */
 	return parent->check_duplicate(hash);
@@ -102,7 +102,7 @@ AStarNodePointer* AStarNodeList::check_duplicate(int hash)
 void AStarNodeList::add_node(AStarNode* add_node)
 {
 	/* Make sure the add_node pointer is allocated */
-	if (add_node == nullptr)
+	if (add_node == NULL)
 		return;
 
 	/* Get the hash corresponding to this AStarNode */
@@ -207,7 +207,7 @@ void AStarNodeList::print_list()
 	{
 		std::cout << *it->second->get_ptr()->get_pos()->get_coord() << " - " << it->second->get_ptr()->get_pos()->get_depth();
 
-		if (it->second->get_ptr()->get_parent() == nullptr)
+		if (it->second->get_ptr()->get_parent() == NULL)
 			std::cout << " - no parent" << std::endl;
 		else
 			std::cout << " - " << *it->second->get_ptr()->get_parent()->get_pos()->get_coord() << std::endl;

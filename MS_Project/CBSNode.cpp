@@ -1,8 +1,8 @@
 #include <unordered_map>
 
 #include "CBSNode.h"
-#include "Agent.h";
-#include "Coordinates.h";
+#include "Agent.h"
+#include "Coordinates.h"
 #include "CantorPair.h"
 
 /* 
@@ -117,8 +117,15 @@ bool CBSNode::get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Po
 			{
 				*agent_1 = i;
 				*agent_2 = it->second;
-				*conflict_1 = Position(curr_coord.get_xcoord(), curr_coord.get_ycoord(),depth);
+
+				/* Set agent 1's conflict */
+				conflict_1->set_x(curr_coord.get_xcoord());
+				conflict_1->set_y(curr_coord.get_ycoord());
+				conflict_1->set_depth(depth);
+
+				/* Agent 2 has the same conflict as agent 1*/
 				*conflict_2 = *conflict_1;
+
 				return true;
 			}
 
@@ -135,8 +142,16 @@ bool CBSNode::get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Po
 			{
 				*agent_1 = i;
 				*agent_2 = swap_curr_it->second;
-				*conflict_1 = Position(curr_coord.get_xcoord(), curr_coord.get_ycoord(), depth);
-				*conflict_2 = Position(prev_coord.get_xcoord(), prev_coord.get_ycoord(), depth);
+
+				/* Set agent 1's conflict */
+				conflict_1->set_x(curr_coord.get_xcoord());
+				conflict_1->set_y(curr_coord.get_ycoord());
+				conflict_1->set_depth(depth);
+
+				/* Set agent 2's conflict */
+				conflict_2->set_x(prev_coord.get_xcoord());
+				conflict_2->set_y(prev_coord.get_ycoord());
+				conflict_2->set_depth(depth);
 				return true;
 			}
 

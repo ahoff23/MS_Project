@@ -14,3 +14,4 @@ MS_Project.v12.suo
 unsuccessfulbuild
 *.exe
 *.ilk
+*.o

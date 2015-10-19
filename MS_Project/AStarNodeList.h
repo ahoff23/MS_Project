@@ -1,7 +1,7 @@
 #ifndef ASTARNODELIST_H
 #define ASTARNODELIST_H
 
-#include <unordered_map>
+#include "UnorderedMap.h"
 
 class Position;
 class AStarNodePointer;
@@ -49,7 +49,7 @@ public:
 	AStarNodeList & operator=(AStarNodeList& rhs);
 
 	/* Accessor */
-	std::unordered_map<int, AStarNodePointer*>* get_list() { return &list; };
+	std::unordered_map<int, AStarNodePointer*, hash_struct>* get_list() { return &list; };
 	AStarNodeList* get_parent() { return parent; };
 	int get_size() { return list.size(); };
 
@@ -57,7 +57,7 @@ public:
 	~AStarNodeList();
 private:
 	/* Hash table of all positions in this iteration of A* search */
-	std::unordered_map<int, AStarNodePointer*> list;
+	std::unordered_map<int, AStarNodePointer*, hash_struct> list;
 	/* Pointer to the parent ClosedList to avoid redundancy */
 	AStarNodeList* parent;
 };

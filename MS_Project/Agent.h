@@ -4,8 +4,9 @@
 #include <queue>
 #include <vector>
 #include <functional>
-#include <unordered_map>
 #include <stack>
+
+#include "UnorderedMap.h"
 
 class Coord;
 class AStarNode; 
@@ -34,16 +35,18 @@ public:
 	std::stack<Coord> get_solution();
 	/* Print the solution to the console */
 	void print_solution();
+	/* Print the solution to a file */
+	void file_print_solution(std::ofstream& file);
 	/* Get the agent's cost */
 	int get_cost();
 
 	/* Accessor functions */
 	Coord* get_goal() { return goal; };
-	std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode>>*
+	std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >*
 		get_open_list() { return &open_list; };
 	AStarNodeList* get_open_list_hash_table() { return open_list_hash_table; };
 	AStarNodeList* get_closed_list() { return closed_list; };
-	std::unordered_map<int, bool>* get_constraints() { return &constraints; };
+	std::unordered_map<int, bool,hash_struct>* get_constraints() { return &constraints; };
 	World* get_world() { return world; };
 	std::string get_name() { return name; };
 
@@ -57,7 +60,7 @@ private:
 	/* Goal node of the search */
 	AStarNode* goal_node;
 	/* OPEN list in the form of a min heap */
-	std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode>> open_list;
+	std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> > open_list;
 	/* OPEN list in the form of a hash table */
 	AStarNodeList* open_list_hash_table;
 	/* CLOSED list for the search in the form of a hash table */
@@ -67,7 +70,7 @@ private:
 	* and the value is simply a meaningless boolean value. The value is meaningless because
 	* the only thing that matters is whether or not the Position is in the hash table
 	*/
-	std::unordered_map<int, bool> constraints;
+	std::unordered_map<int, bool, hash_struct> constraints;
 	/* 
 	* Sub-search to find nodes to remove from the OPEN and CLOSED list
 	* based on a new constraint.

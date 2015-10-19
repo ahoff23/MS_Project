@@ -21,9 +21,10 @@ class CBSTree
 public:
 	/* Constructor */
 	CBSTree(std::string agent_file, std::string world_file);
-
 	/* Get the solution of the MAPF problem */
 	CBSNode* get_solution();
+	/* Print the solution of the tree to an output file */
+	void file_print_solution();
 	
 	/* Destructor */
 	~CBSTree();

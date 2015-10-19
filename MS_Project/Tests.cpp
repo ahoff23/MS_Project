@@ -69,7 +69,7 @@ bool Tests::run_tests()
 
 /*
 * Tests for the Coordinate object
-* @return true if all tests pass or print an error and return false if one test fails.
+* @return true if all tests pass or print an error and return false if one test fails
 */
 bool Tests::coordinate_tests()
 {
@@ -148,20 +148,20 @@ bool Tests::cantor_pair_tests()
 	const int NUM_POSITIONS = 5;
 
 	/* Create slightly different Position objects */
-	Position pos_array[NUM_POSITIONS];
-	pos_array[0] = Position(num_1, num_2, num_3);
-	pos_array[1] = Position(num_1, num_2, num_1);
-	pos_array[2] = Position(num_2, num_1, num_3);
-	pos_array[3] = Position(num_3, num_2, num_1);
-	pos_array[4] = Position(num_1, num_3, num_2);
+	Position* pos_array[NUM_POSITIONS];
+	pos_array[0] = new Position(num_1, num_2, num_3);
+	pos_array[1] = new Position(num_1, num_2, num_1);
+	pos_array[2] = new Position(num_2, num_1, num_3);
+	pos_array[3] = new Position(num_3, num_2, num_1);
+	pos_array[4] = new Position(num_1, num_3, num_2);
 
 	/* Create hash objects for each Position */
 	int hash_array[NUM_POSITIONS];
-	hash_array[0] = CantorPair::get_int(&pos_array[0]);
-	hash_array[1] = CantorPair::get_int(&pos_array[1]);
-	hash_array[2] = CantorPair::get_int(&pos_array[2]);
-	hash_array[3] = CantorPair::get_int(&pos_array[3]);
-	hash_array[4] = CantorPair::get_int(&pos_array[4]);
+	hash_array[0] = CantorPair::get_int(pos_array[0]);
+	hash_array[1] = CantorPair::get_int(pos_array[1]);
+	hash_array[2] = CantorPair::get_int(pos_array[2]);
+	hash_array[3] = CantorPair::get_int(pos_array[3]);
+	hash_array[4] = CantorPair::get_int(pos_array[4]);
 
 	/* Make sure all hashes are unique */
 	for (int i = 0; i < NUM_POSITIONS; i++)
@@ -171,10 +171,19 @@ bool Tests::cantor_pair_tests()
 			if (hash_array[i] == hash_array[j] && i != j)
 			{
 				std::cout << "FAILED: Cantor pairs not unique." << std::endl;
+
+				/* Clean up */
+				for (int k = 0; k < NUM_POSITIONS; k++)
+					delete pos_array[k];
+
 				return false;
 			}
 		}
 	}
+
+	/* Clean up */
+	for (int k = 0; k < NUM_POSITIONS; k++)
+		delete pos_array[k];
 
 	/* 
 	* Test Position Cantor Pair by making sure a specifically calculated Cantor Pair hash 
@@ -206,7 +215,7 @@ bool Tests::closed_list_tests()
 	int ycoord = 2;
 	int depth = 3;
 	Position pos_1 = Position(xcoord, ycoord, depth);
-	AStarNode* add_node_1 = new AStarNode(pos_1, nullptr, 1);
+	AStarNode* add_node_1 = new AStarNode(pos_1, NULL, 1);
 
 	/* Add a ClosedNode to the list */
 	AStarNodeList list_1 = AStarNodeList();
@@ -224,7 +233,7 @@ bool Tests::closed_list_tests()
 
 	/* Check if a non-duplicate is not in the list */
 	Position pos_2 = Position(xcoord + 1, ycoord + 1, depth);
-	AStarNode* add_node_2 = new AStarNode(pos_2, nullptr, 1);
+	AStarNode* add_node_2 = new AStarNode(pos_2, NULL, 1);
 	if (list_1.check_duplicate(add_node_2))
 	{
 		std::cout <<
@@ -388,18 +397,18 @@ bool Tests::world_tests()
 	}
 
 	/* Coordinates that should not exist */
-	const int COORD_COUNT = 6;
-	Coord coords[COORD_COUNT];
-	coords[0] = Coord(-1, 0);
-	coords[1] = Coord(0, -1);
-	coords[2] = Coord(-1, -1);
-	coords[3] = Coord(0, 3);
-	coords[4] = Coord(7, 0);
-	coords[5] = Coord(7, 3);
+	const int NUM_COORDS = 6;
+	Coord* coords[NUM_COORDS];
+	coords[0] = new Coord(-1, 0);
+	coords[1] = new Coord(0, -1);
+	coords[2] = new Coord(-1, -1);
+	coords[3] = new Coord(0, 3);
+	coords[4] = new Coord(7, 0);
+	coords[5] = new Coord(7, 3);
 
-	for (int i = 0; i < COORD_COUNT; i++)
+	for (int i = 0; i < NUM_COORDS; i++)
 	{
-		if (test_world->check_coord(&coords[i]))
+		if (test_world->check_coord(coords[i]))
 		{
 			std::cout << 
 				"FAILED: Coord[" << i <<
@@ -409,10 +418,17 @@ bool Tests::world_tests()
 			/* Remove the test file */
 			std::remove(test_file);
 
+			/* Clean up */
+			for (int j = 0; j < NUM_COORDS; j++)
+				delete coords[j];
+
 			return false;
 		}
 	}
 
+	/* Clean up */
+	for (int j = 0; j < NUM_COORDS; j++)
+		delete coords[j];
 	delete test_world;
 
 	/* Remove the test file */
@@ -487,12 +503,27 @@ bool Tests::a_star_tests()
 	}
 
 	/* Validate each path member */
-	if (check[0] != Coord(0, 0) || check[1] != Coord(1, 0) || check[2] != Coord(2, 0))
+	const int NUM_COORDS = 3;
+	Coord** coords = new Coord*[NUM_COORDS];
+	coords[0] = new Coord(0, 0);
+	coords[1] = new Coord(1, 0);
+	coords[2] = new Coord(2, 0);
+	if (check[0] != *coords[0] || check[1] != *coords[1] || check[2] != *coords[2])
 	{
 		std::cout << "FAILED: A* solution path is incorrect" << std::endl;
+
+		/* Clean up */
+		for (int i = 0; i < NUM_COORDS; i++)
+			delete coords[i];
+		delete[] coords;
+
 		return false;
 	}
 
+	/* Clean up */
+	for (int i = 0; i < NUM_COORDS; i++)
+		delete coords[i];
+	delete[] coords;
 	delete search;
 
 	return true;
@@ -557,18 +588,32 @@ bool Tests::path_clear_a_star_tests()
 	delete search;
 
 	/* Validate each path member */
+	const int NUM_COORDS = 3;
+	Coord** coords = new Coord*[NUM_COORDS];
+	coords[0] = new Coord(0, 0);
+	coords[1] = new Coord(1, 0);
+	coords[2] = new Coord(2, 0);
 	if (
-		check[0] != Coord(0, 0) || check[1] != Coord(0, 0) ||
-		check[2] != Coord(1, 0) || check[3] != Coord(2, 0)
+		check[0] != *coords[0] || check[1] != *coords[0] ||
+		check[2] != *coords[1] || check[3] != *coords[2]
 		)
 	{
 		std::cout << "FAILED: A* solution path is incorrect" << std::endl;
+
+		/* Clean up */
 		delete search;
 		delete constrained_search;
 		delete test_world;
+		for (int i = 0; i < NUM_COORDS; i++)
+			delete coords[i];
+		delete [] coords;
 		return false;
 	}
 
+	/* Clean up */
+	for (int i = 0; i < NUM_COORDS; i++)
+		delete coords[i];
+	delete [] coords;
 	delete constrained_search;
 	delete test_world;
 }
@@ -600,7 +645,7 @@ World* Tests::create_world()
 		/* Remove the test file */
 		std::remove(test_file);
 
-		return nullptr;
+		return NULL;
 	}
 
 	/* Remove the test file */
@@ -640,12 +685,12 @@ bool Tests::cbs_node_tests()
 
 	/* Create variables to store conflict information */
 	int agent_1;
-	Position conflict_1;
+	Position* conflict_1 = new Position();
 	int agent_2;
-	Position conflict_2;
+	Position* conflict_2 = new Position();
 
 	/* Check for a conflict in the node */
-	bool found_conflict = node->get_conflicts(&agent_1,&conflict_1,&agent_2,&conflict_2);
+	bool found_conflict = node->get_conflicts(&agent_1,conflict_1,&agent_2,conflict_2);
 
 	/* Make sure a conflict is found */
 	if (found_conflict == false)
@@ -659,11 +704,11 @@ bool Tests::cbs_node_tests()
 
 	/* Make sure the conflict found is correct */
 	if (
-		conflict_1.get_coord()->get_xcoord() != 1 ||
-		conflict_1.get_coord()->get_ycoord() != 0 ||
-		conflict_2.get_coord()->get_xcoord() != 1 ||
-		conflict_2.get_coord()->get_ycoord() != 0 ||
-		conflict_1.get_depth() != 1 || conflict_2.get_depth() != 1
+		conflict_1->get_coord()->get_xcoord() != 1 ||
+		conflict_1->get_coord()->get_ycoord() != 0 ||
+		conflict_2->get_coord()->get_xcoord() != 1 ||
+		conflict_2->get_coord()->get_ycoord() != 0 ||
+		conflict_1->get_depth() != 1 || conflict_2->get_depth() != 1
 		)
 	{
 		std::cout << "FAILED: Incorrect CBSNode conflict." << std::endl;
@@ -674,10 +719,10 @@ bool Tests::cbs_node_tests()
 	}
 
 	/* Create a new CBSNode based on the prior CBSNode with a new conflict */
-	CBSNode* conflict_node = new CBSNode(node, agent_1, &conflict_1);
+	CBSNode* conflict_node = new CBSNode(node, agent_1, conflict_1);
 
 	/* Check for a conflict in the node */
-	found_conflict = conflict_node->get_conflicts(&agent_1, &conflict_1, &agent_2, &conflict_2);
+	found_conflict = conflict_node->get_conflicts(&agent_1, conflict_1, &agent_2, conflict_2);
 
 	/* Make sure a conflict is found */
 	if (found_conflict == false)
@@ -690,21 +735,13 @@ bool Tests::cbs_node_tests()
 		return false;
 	}
 
-	int x1 = conflict_1.get_coord()->get_xcoord();
-	int y1 = conflict_1.get_coord()->get_ycoord();
-	int d1 = conflict_1.get_depth();
-	int x2 = conflict_2.get_coord()->get_xcoord();
-	int y2 = conflict_2.get_coord()->get_ycoord();
-	int d2 = conflict_2.get_depth();
-
-
 	/* Make sure the conflict found is correct */
 	if (
-		conflict_1.get_coord()->get_xcoord() != 1 ||
-		conflict_1.get_coord()->get_ycoord() != 0 ||
-		conflict_2.get_coord()->get_xcoord() != 2 ||
-		conflict_2.get_coord()->get_ycoord() != 0 ||
-		conflict_1.get_depth() != 2 || conflict_2.get_depth() != 2
+		conflict_1->get_coord()->get_xcoord() != 1 ||
+		conflict_1->get_coord()->get_ycoord() != 0 ||
+		conflict_2->get_coord()->get_xcoord() != 2 ||
+		conflict_2->get_coord()->get_ycoord() != 0 ||
+		conflict_1->get_depth() != 2 || conflict_2->get_depth() != 2
 		)
 	{
 		std::cout << "FAILED: Incorrect second CBSNode conflict." << std::endl;
@@ -720,6 +757,8 @@ bool Tests::cbs_node_tests()
 	delete a_2;
 	delete node;
 	delete conflict_node;
+	delete conflict_1;
+	delete conflict_2;
 
 	/* All tests passed */
 	return true;
@@ -753,37 +792,97 @@ bool Tests::cbs_tree_tests()
 	std::stack<Coord> sol_2 = solution_agents[2]->get_solution();
 
 	/* Check the solution path for the first agent */
-	Coord c0 = Coord(0, 0);
-	Coord c1 = Coord(1, 1);
-	Coord c2 = Coord(2, 2);
-	if (Tests::check_top_coord(sol_0, &c0) == false)
+	Coord* c0 = new Coord(0, 0);
+	Coord* c1 = new Coord(1, 1);
+	Coord* c2 = new Coord(2, 2);
+	if (Tests::check_top_coord(sol_0, c0) == false)
+	{
+		delete c0;
+		delete c1;
+		delete c2;
 		return false;
-	if (Tests::check_top_coord(sol_0, &c1) == false)
+	}
+	if (Tests::check_top_coord(sol_0, c1) == false)
+	{
+		delete c0;
+		delete c1;
+		delete c2;
 		return false;
-	if (Tests::check_top_coord(sol_0, &c2) == false)
+	}
+	if (Tests::check_top_coord(sol_0, c2) == false)
+	{
+		delete c0;
+		delete c1;
+		delete c2;
 		return false;
+	}
+
+	/* Clean up */
+	delete c0;
+	delete c1;
+	delete c2;
 
 	/* Check the solution path for the second agent */
-	c0 = Coord(1, 0);
-	c1 = Coord(2, 1);
-	c2 = Coord(1, 2);
-	if (Tests::check_top_coord(sol_1, &c0) == false)
+	c0 = new Coord(1, 0);
+	c1 = new Coord(2, 1);
+	c2 = new Coord(1, 2);
+	if (Tests::check_top_coord(sol_1, c0) == false)
+	{
+		delete c0;
+		delete c1;
+		delete c2;
 		return false;
-	if (Tests::check_top_coord(sol_1, &c1) == false)
+	}
+	if (Tests::check_top_coord(sol_1, c1) == false)
+	{
+		delete c0;
+		delete c1;
+		delete c2;
 		return false;
-	if (Tests::check_top_coord(sol_1, &c2) == false)
+	}
+	if (Tests::check_top_coord(sol_1, c2) == false)
+	{
+		delete c0;
+		delete c1;
+		delete c2;
 		return false;
+	}
+
+	/* Clean up */
+	delete c0;
+	delete c1;
+	delete c2;
 
 	/* Check the solution path for the third agent */
-	c0 = Coord(2, 2);
-	c1 = Coord(1, 2);
-	c2 = Coord(0, 1);
-	if (Tests::check_top_coord(sol_2, &c0) == false)
+	c0 = new Coord(2, 2);
+	c1 = new Coord(1, 2);
+	c2 = new Coord(0, 1);
+	if (Tests::check_top_coord(sol_2, c0) == false)
+	{
+		delete c0;
+		delete c1;
+		delete c2;
 		return false;
-	if (Tests::check_top_coord(sol_2, &c1) == false)
+	}
+	if (Tests::check_top_coord(sol_2, c1) == false)
+	{
+		delete c0;
+		delete c1;
+		delete c2;
 		return false;
-	if (Tests::check_top_coord(sol_2, &c2) == false)
+	}
+	if (Tests::check_top_coord(sol_2, c2) == false)
+	{
+		delete c0;
+		delete c1;
+		delete c2;
 		return false;
+	}
+
+	/* Clean up */
+	delete c0;
+	delete c1;
+	delete c2;
 
 	/* Remove the test files */
 	std::remove(world_file.c_str());

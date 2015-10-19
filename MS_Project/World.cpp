@@ -8,7 +8,7 @@
 World::World()
 {
 	/* Default values not possible values for error checking */
-	coords = nullptr;
+	coords = NULL;
 	max_x = -1;
 	max_y = -1;
 }
@@ -25,7 +25,7 @@ World::World()
 World::World(std::string txt_file)
 {
 	/* Open the text file */
-	std::ifstream world_file(txt_file);
+	std::ifstream world_file(txt_file.c_str());
 	if (!world_file.is_open())
 		throw TerminalException("World file could not be opened.");
 
@@ -62,7 +62,7 @@ World::World(std::string txt_file)
 	int coords_index = 0;
 
 	/* Read the file and create the matrix of coordinates */
-	world_file.open(txt_file);
+	world_file.open(txt_file.c_str());
 	if (!world_file.is_open())
 		throw TerminalException("World file could not be opened.");
 
