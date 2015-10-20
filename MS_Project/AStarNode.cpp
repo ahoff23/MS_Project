@@ -41,10 +41,6 @@ AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
 	/* The parent path leads to this node */
 	point_count = 1;
 
-	/* Make sure the parent pointer exists */
-	if (p_parent == NULL)
-		return;
-
 	/* Add the parent node */
 	parent = p_parent;
 }

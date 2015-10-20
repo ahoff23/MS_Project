@@ -10,6 +10,7 @@
 #include "AStarNodeList.h"
 #include "AStarNodePointer.h"
 #include "PathClearAStar.h"
+#include "Macros.h"
 
 /* 
 * Initialize the agent search and place the root on the OPEN list 
@@ -142,6 +143,11 @@ void Agent::find_solution()
 			/* Remove the node from the OPEN list without deleting the node */
 			open_list_hash_table->remove_hash(top);
 
+/* Display the length of the OPEN and CLOSED lists */
+#ifdef DISPLAY_LIST_SIZES
+			std::cout << "OPEN LIST SIZE: " << open_list_hash_table->get_list()->size() << std::endl;
+			std::cout << "CLOSED LIST SIZE: " << closed_list->get_list()->size() << std::endl;
+#endif
 			return;
 		}
 
@@ -299,20 +305,20 @@ void Agent::file_print_solution(std::ofstream& file)
 	std::stack<Coord> path = get_solution();
 
 	/* Print the agent's name */
-	file << "*********************\n";
-	file << name;
-	file << "\n*********************\n";
+	file << "*********************" << "\n\n";
+	file << "\n";
+	file << name << "\n\n";
+	file << "*********************" << "\n\n";
 
 	/* Make sure the solution is correct */
 	while (!path.empty())
 	{
-		file << path.top();
-		file << "\n";
+		file << path.top() << "\n\r";
 		path.pop();
 	}
 
 	/* Add an extra line for formatting */
-	file << "\n";
+	file << "\n\n";
 }
 
 /*

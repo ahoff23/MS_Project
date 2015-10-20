@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "AStarNodeList.h"
 #include "Coordinates.h"
 #include "AStarNode.h"
@@ -44,7 +46,7 @@ AStarNodePointer* AStarNodeList::check_duplicate(AStarNode* node)
 
 	/* Make sure this list has a parent */
 	if (parent == NULL)
-		return false;
+		return NULL;
 
 	/* Recursively check all parents of this list */
 	return parent->check_duplicate(hash);
@@ -180,12 +182,11 @@ AStarNodeList & AStarNodeList::operator=(AStarNodeList& rhs)
 * Copy by making new copies of each node in the parameter list 
 * @param copy_list: List to copy
 */
-#include <iostream>
 void AStarNodeList::node_copy(AStarNodeList* copy_list)
 {
 	/* Clear this list */
 	list.clear();
-
+	
 	/* Copy and place each node into this list */
 	for (auto it = copy_list->get_list()->begin(); it != copy_list->get_list()->end(); ++it)
 	{

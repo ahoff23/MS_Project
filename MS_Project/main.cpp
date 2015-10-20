@@ -3,15 +3,14 @@
 #include "Tests.h"
 #include "CBSTree.h"
 #include "Exceptions.h"
-
-#define TEST 1
+#include "Macros.h"
 
 int main()
 {
 #ifndef TEST
 	/* Agent and world file names */
-	std::string agent_file = "Agents/testAgents7.txt";
-	std::string world_file = "Worlds/testWorld7.txt";
+	std::string agent_file = "Agents/testAgents8.txt";
+	std::string world_file = "Worlds/testWorld8.txt";
 
 	/* Tree variable */
 	CBSTree* tree;
@@ -31,8 +30,7 @@ int main()
 		std::cout << exception_msg << std::endl;
 
 		return 0;
-	}
-
+	}	
 	delete tree;
 #else
 	Tests::run_tests();

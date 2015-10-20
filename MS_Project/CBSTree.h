@@ -4,6 +4,9 @@
 #include <queue>
 #include <string>
 #include <functional>
+#include <time.h>
+
+#include "Macros.h"
 
 class CBSNode;
 class Agent;
@@ -42,6 +45,10 @@ private:
 	void generate_agents(std::string txt_file);
 	/* Convert a coordinate in the format ({int},{int}) to a Coord object */
 	Coord* str_to_coord(std::string coord_str);
+
+#ifdef TIME_LIMIT
+	time_t start;
+#endif
 };
 
 #endif

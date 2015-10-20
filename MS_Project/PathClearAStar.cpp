@@ -8,6 +8,11 @@
 #include "CantorPair.h"
 #include "World.h"
 #include "AStarNodeList.h"
+#include "Macros.h"
+
+#ifdef PCA_STAR_SIZE
+#include <iostream>
+#endif
 
 /*
 * Get the goal coordinate from the parent search as well as pointers
@@ -65,7 +70,16 @@ void PathClearAStar::path_clear_a_star()
 
 		/* Check if the node is a solution, if it is, the search is done */
 		if (*top->get_pos()->get_coord() == *goal)
+		{
+/* Display the size of the OPEN and CLOSED lists */
+#ifdef PCA_STAR_SIZE
+			std::cout << "PCA* OPEN LIST SIZE: " << open_list.size() << std::endl;
+			std::cout << "PCA CLOSED LIST SIZE:" << closed_list->get_size() << std::endl;
+#endif
+
+
 			return;
+		}
 
 		/* Generate successors */
 		std::vector<Position> successors = std::vector<Position>();

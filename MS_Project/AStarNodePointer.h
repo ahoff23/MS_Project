@@ -25,7 +25,6 @@ public:
 private:
 	/* Pointer to an A* Node */
 	AStarNode* ptr;
-
 	/* Counter of how many paths led to the ptr node */
 	int counter;
 };

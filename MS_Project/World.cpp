@@ -29,6 +29,9 @@ World::World(std::string txt_file)
 	if (!world_file.is_open())
 		throw TerminalException("World file could not be opened.");
 
+	/* ASCII value for carriage return */
+	const int CARRIAGE_RETURN = 13;
+
 	/* Default values for max_x and max_y */
 	max_x = -1;
 	max_y = -1;
@@ -39,8 +42,12 @@ World::World(std::string txt_file)
 	{
 		max_y++;
 
-		/* Line length if the first first character is at index 0 */
+		/* Line length if the first character is at index 0 */
 		int line_length = int(line.length()) - 1;
+
+		/* If the final character is a newline, '\n', decrement the line length to ignore it */
+		if (line[line_length] == CARRIAGE_RETURN)
+			line_length--;
 
 		if (max_x < line_length)
 			max_x = line_length;
@@ -75,10 +82,12 @@ World::World(std::string txt_file)
 		/* Read each entry in the line (i is the column number) */
 		for (int i = 0; i < line_length; i++)
 		{
-			if (line[i] == '0')
+			if (line.at(i) == '0')
 				coords[coords_index] = false;
-			else if (line[i] == '1')
+			else if (line.at(i) == '1')
 				coords[coords_index] = true;
+			else if (line.at(i) == CARRIAGE_RETURN)
+				continue;
 			else
 				throw TerminalException("Invalid file format.");
 			coords_index++;

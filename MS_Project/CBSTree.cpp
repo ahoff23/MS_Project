@@ -6,7 +6,6 @@
 #include "Exceptions.h"
 #include "Coordinates.h"
 #include "Agent.h"
-
 /* 
 * Operator for comparing two CBSNodes in the Compare struct for use in priority queue (minheap)
 * @param lhs: The first CBSNode to compare
@@ -33,12 +32,16 @@ CBSTree::CBSTree(std::string agent_file, std::string world_file)
 
 	/* Create the root CBSNode */
 	CBSNode* root = new CBSNode(&agents);
-	
+
 	/* Place the root CBSNode onto the tree */
 	tree.push(root);
 
 	/* Initialize closed CBSNode list */
 	closed_nodes = std::vector<CBSNode*>();
+
+#ifdef TIME_LIMIT
+	start = time(0);
+#endif
 }
 
 /* 
@@ -48,6 +51,9 @@ CBSTree::CBSTree(std::string agent_file, std::string world_file)
 */
 void CBSTree::generate_agents(std::string txt_file)
 {
+	/* ASCII value for carriage return */
+	const int CARRIAGE_RETURN = 13;
+
 	/* Length of a line from the file */
 	int len;
 	/* Name of the agent */
@@ -62,7 +68,7 @@ void CBSTree::generate_agents(std::string txt_file)
 	/* Open the text file */
 	std::ifstream agent_file(txt_file);
 	if (!agent_file.is_open())
-		throw TerminalException("World file could not be opened.");
+		throw TerminalException("Agent file could not be opened.");
 
 	/* Each line of the file contains new agent information */
 	std::string line;
@@ -74,6 +80,10 @@ void CBSTree::generate_agents(std::string txt_file)
 
 		/* Get the line length */
 		len = line.length();
+
+		/* If the last character is a carriage return, ignore it */
+		if (line.at(len - 1) == CARRIAGE_RETURN)
+			len--;
 
 		/* Find the index of the first space */
 		int index = 0;
@@ -199,6 +209,13 @@ CBSNode* CBSTree::get_solution()
 {
 	while (true)
 	{
+
+/* Stop the program early if testing for time */
+#ifdef TIME_LIMIT
+		if (difftime(time(0), start) > TIME_LIMIT)
+			return NULL;
+#endif
+
 		/* Get the cheapest CBS Node in the heap */
 		CBSNode* top = tree.top();
 		tree.pop();
@@ -238,6 +255,10 @@ void CBSTree::file_print_solution()
 {
 	/* Get the solution */
 	CBSNode* solution_node = get_solution();
+
+	/* Make sure a solution node is returned */
+	if (solution_node == NULL)
+		return;
 
 	/* Get the solution agents */
 	std::vector<Agent*> solution_agents = *solution_node->get_agents();
