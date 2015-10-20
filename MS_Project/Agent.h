@@ -7,6 +7,7 @@
 #include <stack>
 
 #include "UnorderedMap.h"
+#include "Macros.h"
 
 class Coord;
 class AStarNode; 
@@ -42,6 +43,7 @@ public:
 
 	/* Accessor functions */
 	Coord* get_goal() { return goal; };
+	Coord* get_start() { return start_coord; };
 	std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >*
 		get_open_list() { return &open_list; };
 	AStarNodeList* get_open_list_hash_table() { return open_list_hash_table; };
@@ -50,6 +52,11 @@ public:
 	World* get_world() { return world; };
 	std::string get_name() { return name; };
 
+#ifdef OPEN_LIST_DATA
+	/* agent_depth accessor function */
+	int get_depth() { return agent_depth; };
+#endif
+
 	/* Destructor */
 	~Agent();
 private:
@@ -57,6 +64,8 @@ private:
 	World* world;
 	/* Goal coordinate of the agent */
 	Coord* goal;
+	/* Start coordinate of the agent */
+	Coord* start_coord;
 	/* Goal node of the search */
 	AStarNode* goal_node;
 	/* OPEN list in the form of a min heap */
@@ -83,6 +92,11 @@ private:
 
 	/* Get a vector of successor positions of a given position */
 	void get_successors(Position* pos, std::vector<Position>* successors);
+
+#ifdef OPEN_LIST_DATA
+	/* Agent's depth  (i.e. number of ancestor agents) */
+	int agent_depth;
+#endif
 };
 
 #endif

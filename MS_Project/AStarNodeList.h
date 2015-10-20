@@ -41,7 +41,6 @@ public:
 	* decrementing the nodes counter
  	*/
 	void remove_hash(AStarNode* node);
-
 	/* Print the list */
 	void print_list();
 

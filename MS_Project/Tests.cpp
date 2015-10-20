@@ -11,6 +11,7 @@
 #include "Agent.h"
 #include "CBSNode.h"
 #include "CBSTree.h"
+#include "Macros.h"
 
 /* 
 * Runs all tests 
@@ -48,10 +49,12 @@ bool Tests::run_tests()
 	else
 		std::cout << "A* Tests Passed." << std::endl;
 
+#ifndef CBS_CLASSIC
 	if (!path_clear_a_star_tests())
 		return false;
 	else
 		std::cout << "Path Clear A* Tests Passed." << std::endl;
+#endif
 
 	if (!cbs_node_tests())
 		return false;

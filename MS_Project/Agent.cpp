@@ -10,7 +10,6 @@
 #include "AStarNodeList.h"
 #include "AStarNodePointer.h"
 #include "PathClearAStar.h"
-#include "Macros.h"
 
 /* 
 * Initialize the agent search and place the root on the OPEN list 
@@ -26,6 +25,9 @@ Agent::Agent(Coord* p_start, Coord* p_goal, World* p_world, std::string p_name)
 
 	/* No goal node is found initially */
 	goal_node = NULL;
+
+	/* Store the start coord */
+	start_coord = new Coord(p_start);
 
 	/* Initialize lists and hash tables */
 	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
@@ -47,6 +49,11 @@ Agent::Agent(Coord* p_start, Coord* p_goal, World* p_world, std::string p_name)
 
 	/* Set the name of the agent */
 	name = p_name;
+
+#ifdef OPEN_LIST_DATA
+	/* Track the depth of the agent */
+	agent_depth = 0;
+#endif
 }
 
 /*
@@ -64,26 +71,46 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 	/* No goal node is found initially */
 	goal_node = NULL;
 
-	/* Copy both OPEN lists */
-	open_list = *(p_agent->get_open_list());
+	/* Store the start Coord */
+	start_coord = new Coord(p_agent->get_start());
+
+	/* Set the world to navigate */
+	world = p_agent->get_world();
+
+	/* Set the name of the agent */
+	name = p_agent->get_name();
+
+	/* Initalize open and closed list hash tables */
 	open_list_hash_table = new AStarNodeList();
-	open_list_hash_table->node_copy(p_agent->get_open_list_hash_table());
+	closed_list = new AStarNodeList(NULL);
 
 	/* Copy the constraints and add the new constraint */
 	constraints = *(p_agent->get_constraints());
 	int hash = CantorPair::get_int(new_constraint);
 	constraints.emplace(hash, true);
 
+/* Using CBS Classic (no PCA*) */
+#ifdef CBS_CLASSIC
+	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
+
+	/* Put the start node in the OPEN list */
+	Position start_pos = Position(p_agent->get_start(), 0);
+	AStarNode* start_node = new AStarNode(start_pos, NULL, calc_cost(&start_pos));
+	open_list.emplace(start_node);
+	open_list_hash_table->add_node(start_node);
+
+/* Using PCA* */
+#else CBS_CLASSIC
+	/* Copy both OPEN lists */
+	open_list = *(p_agent->get_open_list());
+	open_list_hash_table->node_copy(p_agent->get_open_list_hash_table());
+
 	/* Copy the closed list as well	*/
-	closed_list = new AStarNodeList(NULL);
 	closed_list->node_copy(p_agent->get_closed_list());
 	/**********************************************************************
 	* UNCOMMENT THIS IF YOU WANT TO GO BACK TO USING PARENT CLOSED LISTS
 	closed_list = new AStarNodeList(p_astar->get_closed_list());
 	**********************************************************************/
-
-	/* Set the world to navigate */
-	world = p_agent->get_world();
 
 	/* Remove descendants of new_constraint from the OPEN and CLOSED lists */
 	if (new_constraint != NULL)
@@ -91,9 +118,12 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 		path_clear = new PathClearAStar(this, new_constraint);
 		path_clear->path_clear_a_star();
 	}
+#endif
 
-	/* Set the name of the agent */
-	name = p_agent->get_name();
+#ifdef OPEN_LIST_DATA
+	/* Increment the agents depth */
+	agent_depth = p_agent->get_depth() + 1;
+#endif
 }
 
 /*
@@ -111,11 +141,23 @@ void Agent::add_conflict(Position* conflict)
 */
 void Agent::find_solution()
 {
+#ifdef OPEN_LIST_DATA
+	/* Create a variable for the number of nodes popped from the OPEN list*/
+	int popped = 0;
+	/* Create a variable for the number of nodes added to the OPEN list*/
+	int added = 0;
+#endif
+
 	while (!open_list.empty())
 	{
 		/* Pop min cost from open_list and remove from hash table */
 		AStarNode* heap_top = open_list.top();
 		open_list.pop();
+
+#ifdef OPEN_LIST_DATA
+		/* Increment popped counter */
+		popped++;
+#endif
 
 		/* Find the node on the OPEN list hash table */
 		AStarNodePointer* a_star_ptr;
@@ -143,8 +185,16 @@ void Agent::find_solution()
 			/* Remove the node from the OPEN list without deleting the node */
 			open_list_hash_table->remove_hash(top);
 
-/* Display the length of the OPEN and CLOSED lists */
+#ifdef OPEN_LIST_DATA
+			/* Print the OPEN list stats */
+			std::cout << "AGENT DEPTH: " << agent_depth << std::endl;
+			std::cout << "SIZE OF ALL OPEN LIST NODES: " << open_list.size() - added + popped << std::endl;
+			std::cout << "NUMBER OF POPPED NODES: " << popped << std::endl;
+			std::cout << "SIZE OF OPEN LIST NODES IN THIS AGENT: " << added << std::endl;
+#endif
+
 #ifdef DISPLAY_LIST_SIZES
+			/* Display the length of the OPEN and CLOSED lists */
 			std::cout << "OPEN LIST SIZE: " << open_list_hash_table->get_list()->size() << std::endl;
 			std::cout << "CLOSED LIST SIZE: " << closed_list->get_list()->size() << std::endl;
 #endif
@@ -179,6 +229,11 @@ void Agent::find_solution()
 				/* Increment the counter */
 				check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
 				check_open_list->inc();
+
+#ifdef OPEN_LIST_DATA
+				/* Increment added counter */
+				added++;
+#endif
 			}
 			else if (check_open_list != NULL)
 				check_open_list->inc();
@@ -305,20 +360,19 @@ void Agent::file_print_solution(std::ofstream& file)
 	std::stack<Coord> path = get_solution();
 
 	/* Print the agent's name */
-	file << "*********************" << "\n\n";
-	file << "\n";
-	file << name << "\n\n";
-	file << "*********************" << "\n\n";
+	file << "*********************" << "\n";
+	file << name << "\n";
+	file << "*********************" << "\n";
 
 	/* Make sure the solution is correct */
 	while (!path.empty())
 	{
-		file << path.top() << "\n\r";
+		file << path.top() << "\n";
 		path.pop();
 	}
 
 	/* Add an extra line for formatting */
-	file << "\n\n";
+	file << "\n";
 }
 
 /*
@@ -373,4 +427,5 @@ Agent::~Agent()
 	delete goal;
 	delete path_clear;
 	delete goal_node;
+	delete start_coord;
 }
