@@ -1,6 +1,8 @@
 #ifndef ASTARNODE_H
 #define ASTARNODE_H
 
+#include <unordered_map>
+
 #include "Coordinates.h"
 
 /*
@@ -21,23 +23,22 @@ public:
 	/* Accessor functions */
 	Position* get_pos() { return &pos; };
 	float get_cost() { return cost; };
-	int get_point_count() { return point_count; };
+	AStarNode * AStarNode::get_parent();
+	int get_parent_count() { return parents.begin()->second.second; };
+	std::unordered_map<int, std::pair<AStarNode*, int> >* get_parents() { return &parents; };
 
-	/* Increment and decrement the point count */
-	void inc_point_count() { point_count++; };
-	void dec_point_count() { point_count--; };
+	/* Add a parent if it is not already in the parents table */
+	bool add_parent(AStarNode* parent);
+	/* Remove a parent node (decrement the counter) */
+	bool dec_parent(AStarNode* parent);
 
-	/* Return the first parent */
-	AStarNode * get_parent() { return parent; };
 private:
 	/* Parent node of the agent */
-	AStarNode* parent;
+	std::unordered_map<int,std::pair<AStarNode*,int> > parents;
 	/* Position (coordinates and depth) of the node*/
 	Position pos;
 	/* Cost of this node */
 	float cost;
-	/* Number of paths that lead to this node */
-	int point_count;
 };
 
 #endif

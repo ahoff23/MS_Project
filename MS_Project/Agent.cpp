@@ -8,7 +8,6 @@
 #include "CantorPair.h"
 #include "World.h"
 #include "AStarNodeList.h"
-#include "AStarNodePointer.h"
 #include "PathClearAStar.h"
 
 /* 
@@ -160,22 +159,20 @@ void Agent::find_solution()
 #endif
 
 		/* Find the node on the OPEN list hash table */
-		AStarNodePointer* a_star_ptr;
+		AStarNode* top;
 		AStarNode* check_parent = heap_top->get_parent();
 		if (check_parent != NULL)
-			a_star_ptr = open_list_hash_table->check_duplicate(heap_top->get_pos(), check_parent->get_pos());
+			top = open_list_hash_table->check_duplicate(
+				heap_top->get_pos(), check_parent->get_pos()
+				);
 		else
-			a_star_ptr = open_list_hash_table->check_duplicate(heap_top->get_pos(), NULL);
+			top = open_list_hash_table->check_duplicate(
+				heap_top->get_pos(), NULL
+				);
 
 		/* Make sure the node has not been removed from the list by PathClearA* */
-		if (a_star_ptr == NULL)
+		if (top == NULL)
 			continue;
-
-		/*
-		* Use the node in the OPEN list hash table rather than from the minheap because the minheap node
-		* points to a node in the parent A* searches OPEN list hash table
-		*/
-		AStarNode* top = a_star_ptr->get_ptr();
 
 		/* Check if the node is a solution, if it is, return it */
 		if (*top->get_pos()->get_coord() == *goal)
@@ -215,8 +212,8 @@ void Agent::find_solution()
 				continue;
 
 			/* Check if the successor is in either the OPEN or CLOSED list */
-			AStarNodePointer* check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
-			AStarNodePointer* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
+			AStarNode* check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
+			AStarNode* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
 			
 			/* If the successor is not a duplicate, add it to the OPEN list */
 			if (check_open_list == NULL && check_closed_list == NULL)
@@ -226,24 +223,19 @@ void Agent::find_solution()
 				open_list.push(add_node);
 				open_list_hash_table->add_node(add_node);
 
-				/* Increment the counter */
-				check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
-				check_open_list->inc();
-
 #ifdef OPEN_LIST_DATA
 				/* Increment added counter */
 				added++;
 #endif
 			}
 			else if (check_open_list != NULL)
-				check_open_list->inc();
+				open_list_hash_table->add_node(check_open_list);
 			else if (check_closed_list != NULL)
-				check_closed_list->inc();
+				closed_list->add_node(check_closed_list);
 		}
 
-		/* Add top to the CLOSED list unless a duplicate is found */
-		if (!closed_list->check_duplicate(top))
-			closed_list->add_node(top);
+		/* Add top to the CLOSED list */
+		closed_list->add_node(top);
 
 		/* Remove the node from the OPEN list without deleting the node */
 		open_list_hash_table->remove_hash(top);

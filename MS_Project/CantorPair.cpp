@@ -46,24 +46,18 @@ int CantorPair::get_int(Position* pos_1, Position* pos_2)
 }
 
 /*
-* Get the cantor pair from an A* Node, the position and the parent
+* Get the cantor pair from an A* Node's position
 * @param node: Pointer to the node which should return a unique int
 * @return a unique integer based on the parameter
 */
 int CantorPair::get_int(AStarNode* node)
 {
-	/* Get the cantor pair from the position */
-	int cantor_1 = get_int(node->get_pos());
+	/* Make sure the node is not NULL */
+	if (node == NULL)
+		return -1;
 
-	/* If no parent exists, the hash value is -1 */
-	if (node->get_parent() == NULL)
-		return -1 * cantor_1;
-	
-	/* Get the parents cantor pair */
-	int cantor_2 = get_int(node->get_parent()->get_pos());
-
-	/* Get the final cantor pair */
-	return (((cantor_1 + cantor_2) * (cantor_1 + cantor_2 + 1)) / 2) + cantor_2;
+	/* Get the cantor pair based on the node's position */
+	return get_int(node->get_pos());
 }
 
 /*

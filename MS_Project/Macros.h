@@ -2,7 +2,7 @@
 #define MACROS_H
 
 /* Uncomment if automated tests should be run rather than regular program */
-#define TEST 1
+//#define TEST 1
 
 /* Uncomment if test should stop after a set period of time (value in seconds) */
 //#define TIME_LIMIT 100
@@ -22,6 +22,6 @@
 //#define OPEN_LIST_DATA 1
 
 /* Uncomment if the search should not use PCA* and use the classic CBS algorithm */
-#define CBS_CLASSIC 1
+//#define CBS_CLASSIC 1
 
 #endif

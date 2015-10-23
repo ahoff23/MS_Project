@@ -3,7 +3,6 @@
 #include "PathClearAStar.h"
 #include "Agent.h"
 #include "AStarNode.h"
-#include "AStarNodePointer.h"
 #include "Coordinates.h"
 #include "CantorPair.h"
 #include "World.h"
@@ -71,13 +70,11 @@ void PathClearAStar::path_clear_a_star()
 		/* Check if the node is a solution, if it is, the search is done */
 		if (*top->get_pos()->get_coord() == *goal)
 		{
-/* Display the size of the OPEN and CLOSED lists */
 #ifdef PCA_STAR_SIZE
+			/* Display the size of the OPEN and CLOSED lists */
 			std::cout << "PCA* OPEN LIST SIZE: " << open_list.size() << std::endl;
-			std::cout << "PCA CLOSED LIST SIZE:" << closed_list->get_size() << std::endl;
+			std::cout << "PCA* CLOSED LIST SIZE:" << closed_list->get_size() << std::endl;
 #endif
-
-
 			return;
 		}
 
@@ -85,7 +82,7 @@ void PathClearAStar::path_clear_a_star()
 		std::vector<Position> successors = std::vector<Position>();
 		get_successors(top->get_pos(), &successors);
 
-		/* For each successor, check if it is in the OPEN list and CLOSED list */
+		/* For each successor, check if it is in the OPEN or CLOSED list */
 		int len = successors.size();
 		for (int i = 0; i < len; i++)
 		{
@@ -93,10 +90,20 @@ void PathClearAStar::path_clear_a_star()
 			int hash = CantorPair::get_int(&successors[i]);
 			if (constraints->find(hash) != constraints->end())
 				continue;
+			
+			/*
+			* Remove the node from the OPEN or CLOSED list of the parent.
+			* If no parent is removed then do not generate this node.
+			*/
+			if (
+				!parent_open_list->delete_node(&successors[i], top->get_pos(), false) &&
+				!parent_closed_list->delete_node(&successors[i], top->get_pos(), true)
+				)
+				continue;
 
 			/* Check if the successor is in either the OPEN or CLOSED list */
-			AStarNodePointer* check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
-			AStarNodePointer* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
+			AStarNode* check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
+			AStarNode* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
 
 			/* If the successor is not a duplicate, add it to the OPEN list */
 			if (check_open_list == NULL && check_closed_list == NULL)
@@ -105,16 +112,11 @@ void PathClearAStar::path_clear_a_star()
 				AStarNode* add_node = new AStarNode(successors[i], top, calc_cost(&successors[i]));
 				open_list.push(add_node);
 				open_list_hash_table->add_node(add_node);
-
-				/* Remove the node from the OPEN and CLOSED lists of the parent */
-				parent_open_list->delete_node(add_node,false);
-				parent_closed_list->delete_node(add_node,true);
 			}
 		}
 
 		/* Add top to the CLOSED list unless a duplicate is found */
-		if (!closed_list->check_duplicate(top))
-			closed_list->add_node(top);
+		closed_list->add_node(top);
 
 		/* Remove the node from the OPEN list without deleting the node */
 		open_list_hash_table->remove_hash(top);
