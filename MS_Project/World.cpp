@@ -127,7 +127,7 @@ bool World::check_coord(Coord* coord)
 
 	/* Find the index of the coordinate in the coords matrix */
 	int index = y_coord * (max_x + 1) + x_coord;
-
+	
 	/* Check if the coordinate is free */
 	return coords[index];
 }

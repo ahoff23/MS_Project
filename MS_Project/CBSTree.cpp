@@ -6,6 +6,12 @@
 #include "Exceptions.h"
 #include "Coordinates.h"
 #include "Agent.h"
+#include "Macros.h"
+
+#ifdef CONFLICT_DATA
+#include <iostream>
+#endif
+
 /* 
 * Operator for comparing two CBSNodes in the Compare struct for use in priority queue (minheap)
 * @param lhs: The first CBSNode to compare
@@ -209,7 +215,6 @@ CBSNode* CBSTree::get_solution()
 {
 	while (true)
 	{
-
 /* Stop the program early if testing for time */
 #ifdef TIME_LIMIT
 		if (difftime(time(0), start) > TIME_LIMIT)
@@ -231,6 +236,15 @@ CBSNode* CBSTree::get_solution()
 		/* Get the conflicts in the node and check if a solution was found */
 		if (!top->get_conflicts(&agent_1, conflict_1, &agent_2, conflict_2))
 			return top;
+#ifdef CONFLICT_DATA
+		else
+		{
+			std::cout << "Conflict 1: " << *conflict_1->get_coord() << " at depth " <<
+				conflict_1->get_depth() << std::endl;
+			std::cout << "Conflict 2: " << *conflict_2->get_coord() << " at depth " <<
+				conflict_2->get_depth() << std::endl << std::endl;
+		}
+#endif
 
 		/* No solution was found, create two new nodes to add to the heap */
 		CBSNode* add_node_1 = new CBSNode(top, agent_1, conflict_1);
@@ -246,7 +260,6 @@ CBSNode* CBSTree::get_solution()
 		closed_nodes.push_back(top);
 	}
 }
-
 
 /* 
 * Print the solution of the tree to an output file

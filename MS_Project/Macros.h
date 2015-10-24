@@ -21,7 +21,16 @@
 */
 //#define OPEN_LIST_DATA 1
 
+/* Uncomment if you wish to display information about each element expanded in an A* search */
+//#define A_STAR_SEARCH_DATA 1
+
+/* Uncomment this if you wish to display conflict data */
+//#define CONFLICT_DATA 1
+
+/* Uncomment this if you wish to time the main function */
+#define TIME_TEST 1
+
 /* Uncomment if the search should not use PCA* and use the classic CBS algorithm */
-//#define CBS_CLASSIC 1
+#define CBS_CLASSIC 1
 
 #endif

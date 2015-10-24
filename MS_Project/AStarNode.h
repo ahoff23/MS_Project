@@ -23,7 +23,7 @@ public:
 	/* Accessor functions */
 	Position* get_pos() { return &pos; };
 	float get_cost() { return cost; };
-	AStarNode * AStarNode::get_parent();
+	AStarNode * get_parent();
 	int get_parent_count() { return parents.begin()->second.second; };
 	std::unordered_map<int, std::pair<AStarNode*, int> >* get_parents() { return &parents; };
 

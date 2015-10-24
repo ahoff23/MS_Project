@@ -26,7 +26,7 @@ public:
 	/* Check if a position is in the list given the hash */
 	AStarNode* check_duplicate(int hash, int parent_hash);
 	/* Add a node to the list */
-	void add_node(AStarNode* add_node);
+	bool add_node(AStarNode* add_node);
 	/* Remove a parent from a node and delete it if it runs out of parents */
 	bool delete_node(Position* pos, Position* parent_pos, bool del_mem);
 	/* Copy by making new copies of each node in the parameter list */

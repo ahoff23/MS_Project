@@ -8,7 +8,10 @@
 #include "CantorPair.h"
 #include "World.h"
 #include "AStarNodeList.h"
+
+#ifndef CBS_CLASSIC
 #include "PathClearAStar.h"
+#endif
 
 /* 
 * Initialize the agent search and place the root on the OPEN list 
@@ -88,8 +91,9 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 	int hash = CantorPair::get_int(new_constraint);
 	constraints.emplace(hash, true);
 
-/* Using CBS Classic (no PCA*) */
 #ifdef CBS_CLASSIC
+	/* Using CBS Classic (no PCA*) */
+
 	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
 
 	/* Put the start node in the OPEN list */
@@ -98,8 +102,7 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 	open_list.emplace(start_node);
 	open_list_hash_table->add_node(start_node);
 
-/* Using PCA* */
-#else CBS_CLASSIC
+#else
 	/* Copy both OPEN lists */
 	open_list = *(p_agent->get_open_list());
 	open_list_hash_table->node_copy(p_agent->get_open_list_hash_table());
@@ -138,6 +141,10 @@ void Agent::add_conflict(Position* conflict)
 /*
 * Perform the A* search and save the goal node as goal_node
 */
+
+
+#include <ctime>
+
 void Agent::find_solution()
 {
 #ifdef OPEN_LIST_DATA
@@ -152,6 +159,11 @@ void Agent::find_solution()
 		/* Pop min cost from open_list and remove from hash table */
 		AStarNode* heap_top = open_list.top();
 		open_list.pop();
+
+#ifdef A_STAR_SEARCH_DATA
+		std::cout << "COORD: " <<  *heap_top->get_pos()->get_coord() <<
+			" at depth " << heap_top->get_pos()->get_depth() << std::endl;
+#endif
 
 #ifdef OPEN_LIST_DATA
 		/* Increment popped counter */
@@ -182,10 +194,14 @@ void Agent::find_solution()
 			/* Remove the node from the OPEN list without deleting the node */
 			open_list_hash_table->remove_hash(top);
 
+#ifdef A_STAR_SEARCH_DATA
+			std::cout << "END OF SEARCH" << std::endl;
+#endif
+
 #ifdef OPEN_LIST_DATA
 			/* Print the OPEN list stats */
 			std::cout << "AGENT DEPTH: " << agent_depth << std::endl;
-			std::cout << "SIZE OF ALL OPEN LIST NODES: " << open_list.size() - added + popped << std::endl;
+			std::cout << "SIZE OF OPEN LIST: " << open_list.size() << std::endl;
 			std::cout << "NUMBER OF POPPED NODES: " << popped << std::endl;
 			std::cout << "SIZE OF OPEN LIST NODES IN THIS AGENT: " << added << std::endl;
 #endif
@@ -214,14 +230,21 @@ void Agent::find_solution()
 			/* Check if the successor is in either the OPEN or CLOSED list */
 			AStarNode* check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
 			AStarNode* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
-			
+
 			/* If the successor is not a duplicate, add it to the OPEN list */
 			if (check_open_list == NULL && check_closed_list == NULL)
 			{
 				/* Create a new node and add it to the OPEN list (both heap and hash table) */
 				AStarNode* add_node = new AStarNode(successors[i], top, calc_cost(&successors[i]));
-				open_list.push(add_node);
-				open_list_hash_table->add_node(add_node);
+
+				/*
+				* If add_node is added to the hash table, add it to the minheap,
+				* otherwise delete it 
+				*/
+				if (open_list_hash_table->add_node(add_node))
+					open_list.push(add_node);
+				else
+					delete add_node;
 
 #ifdef OPEN_LIST_DATA
 				/* Increment added counter */
@@ -417,7 +440,10 @@ Agent::~Agent()
 	delete open_list_hash_table;
 	delete closed_list;
 	delete goal;
-	delete path_clear;
 	delete goal_node;
 	delete start_coord;
+
+#ifndef CBS_CLASSIC
+	delete path_clear;
+#endif
 }

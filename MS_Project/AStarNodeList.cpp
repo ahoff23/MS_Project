@@ -4,6 +4,7 @@
 #include "Coordinates.h"
 #include "AStarNode.h"
 #include "CantorPair.h"
+#include "Exceptions.h"
 
 /* 
 * Default constructor 
@@ -109,18 +110,35 @@ AStarNode* AStarNodeList::check_duplicate(int hash, int parent_hash)
 /* 
 * Add an AStarNode to the list
 * @param add_node: The AStarNode to add
+* @return true if a new node was added to the list, false if a node was simply editted
 */
-void AStarNodeList::add_node(AStarNode* add_node)
+bool AStarNodeList::add_node(AStarNode* add_node)
 {
 	/* Make sure the add_node pointer is allocated */
 	if (add_node == NULL)
-		return;
+		return false;
 
 	/* Get the hash corresponding to this AStarNode */
 	int hash = CantorPair::get_int(add_node);
 
-	/* Place the AStarNode in the hash table */
-	list.emplace(hash, add_node);
+	/* Check if the node is already on the list */
+	auto it = list.find(hash);
+
+	/*
+	* If the node is already on the list, just add the parent to the
+	* list of parents in the node
+	*/
+	if (it != list.end())
+	{
+		it->second->add_parent(add_node->get_parent());
+		return false;
+	}
+	else
+	{
+		/* Place the AStarNode in the hash table */
+		list.emplace(hash, add_node);
+		return true;
+	}
 }
 
 /* 
