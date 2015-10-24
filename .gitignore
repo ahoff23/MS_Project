@@ -18,3 +18,4 @@ unsuccessfulbuild
 *.stackdump
 *.out
 *.output
+*.txt
