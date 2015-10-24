@@ -25,8 +25,8 @@ public:
 	void set_y(int y) { ycoord = y; };
 
 	/* Access functions */
-	int get_xcoord() { return xcoord; };
-	int get_ycoord() { return ycoord; };
+	int get_xcoord() const { return xcoord; };
+	int get_ycoord() const { return ycoord; };
 private:
 	/* 
 	* X and Y coordinates which are assumed to be non-netaive.

@@ -6,47 +6,31 @@
 #include "Exceptions.h"
 #include "Macros.h"
 
+#ifdef NUM_GEN_TESTS
+#include "TestGenerator.h"
+#endif
 
-
-
-
-#include <queue>
-#include <random>
-#include <time.h>
 int main()
 {
-	std::clock_t start;
-	srand(time(NULL));
 
-	// Create priority queue
-	std::priority_queue<int> test = std::priority_queue<int>();
+#ifdef NUM_GEN_TESTS
+	/* Number of probability of an element being an obstacle */
+	const float OBS_PROB = 0.3;
 
-	// Add elements to queue
-	const int ADD_AMT = 100000;
-	for (int i = 0; i < ADD_AMT; i++)
-		test.push(rand() % 100);
+	/* Number of rows */
+	const int NUM_ROWS = 15;
 
-	// Get start time
-	start = std::clock();
+	/* Number of columns */
+	const int NUM_COLS = 15;
 
-	// Add 100 elements to queue
-	const int TEST_ADD_AMT = 100;
-	for (int i = 0; i < TEST_ADD_AMT; i++)
-		test.push(rand() % 100);
+	/* Number of agents to generate */
+	const int AGENTS_PER_FILE = 5;
 
-	// Print out duration of adding elements
-	std::cout << "TEST TIME: " << float(std::clock() - start) / CLOCKS_PER_SEC << std::endl;
+	TestGenerator test_gen = TestGenerator(NUM_GEN_TESTS,NUM_ROWS,NUM_COLS,AGENTS_PER_FILE);
+	test_gen.generate_files(OBS_PROB);
+#endif
 
-	return 0;
-}
-
-
-
-
-
-int test()
-{
-#ifndef TEST
+#ifdef RUN_PROGRAM
 	/* Agent and world file names */
 	std::string agent_file = "Agents/testAgents8.txt";
 	std::string world_file = "Worlds/testWorld8.txt";
@@ -57,19 +41,8 @@ int test()
 	/* Create the CBSTree and output its solution to an output file */
 	try
 	{
-#ifdef TIME_TEST
-		/* Get the start time of the test */
-		std::clock_t start;
-		start = std::clock();
-#endif
-
 		tree = new CBSTree(agent_file, world_file);
 		tree->file_print_solution();
-
-#ifdef TIME_TEST
-		/* Print the duration of the test in seconds */
-		std::cout << "TEST TIME: " << float(std::clock() - start) / CLOCKS_PER_SEC << std::endl;
-#endif
 	}
 	catch (TerminalException& ex)
 	{
@@ -82,8 +55,69 @@ int test()
 		return 0;
 	}	
 	delete tree;
-#else
+#endif
+
+#ifdef TEST
 	Tests::run_tests();
+#endif
+
+#ifdef NUM_TESTS
+	/* Start time of the test */
+	std::clock_t start;
+
+	/* Tree variable */
+	CBSTree* tree;
+
+	/* Variable storing the sum of all test times */
+	float sum_time = 0;
+
+	/* Failure count */
+	int failures;
+
+	/* Test file name prefixes and suffixes */
+	std::string world_file_prefix = "TestWorlds/test_file";
+	std::string agent_file_prefix = "TestAgents/test_file";
+	std::string suffix = ".txt";
+
+	/* Loop through each test */
+	for (int i = 0; i < NUM_TESTS; i++)
+	{
+		/* Create the world and agent file */
+		std::string world_file = world_file_prefix + std::to_string(i) + suffix;
+		std::string agent_file = agent_file_prefix + std::to_string(i) + suffix;
+
+		/* Start the timer */
+		start = std::clock();
+
+		/* Create the CBSTree and find the solution */
+		try
+		{
+			tree = new CBSTree(agent_file, world_file);
+		}
+		catch (TerminalException& ex)
+		{
+			/* Get the exception message */
+			std::string exception_msg = ex.what();
+
+			if (exception_msg == "TIME LIMIT EXCEEDED")
+			{
+				failures++;
+				continue;
+			}
+
+			/* Print the error message and end the program */
+			std::cout << exception_msg << std::endl;
+
+			return 0;
+		}
+		delete tree;
+
+		/* Get the time it took to run the test */
+		sum_time += float(std::clock() - start) / CLOCKS_PER_SEC;
+	}
+
+	/* Print the duration of the test in seconds */
+	std::cout << "AVG TEST TIME: " << sum_time / NUM_TESTS << " seconds." << std::endl;
 #endif
 
 	return 0;

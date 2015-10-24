@@ -218,7 +218,7 @@ CBSNode* CBSTree::get_solution()
 /* Stop the program early if testing for time */
 #ifdef TIME_LIMIT
 		if (difftime(time(0), start) > TIME_LIMIT)
-			return NULL;
+			throw TerminalException("TIME LIMIT EXCEEDED");
 #endif
 
 		/* Get the cheapest CBS Node in the heap */
