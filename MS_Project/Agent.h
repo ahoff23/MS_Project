@@ -2,17 +2,20 @@
 #define ASTAR_H
 
 #include <queue>
+#include <unordered_map>
 #include <vector>
 #include <functional>
 #include <stack>
 
-#include "UnorderedMap.h"
 #include "Macros.h"
+#include "Coordinates.h"
 
-class Coord;
+#ifdef TIME_LIMIT
+#include <ctime>
+#endif
+
 class AStarNode; 
 class AStarNodeList;
-class Position;
 class World;
 class PathClearAStar;
 
@@ -23,8 +26,16 @@ class PathClearAStar;
 class Agent
 {
 public:
+
 	/* Initialize the A* search and place the root on the OPEN list */
+#ifdef TIME_LIMIT
+	Agent(
+		Coord* p_start, Coord* p_goal, World* p_world,
+		std::string p_name, std::time_t p_start_time
+		);
+#else
 	Agent(Coord* p_start, Coord* p_goal, World* p_world, std::string p_name);
+#endif
 	/* Initialize the A* search from a pre-existing agent */
 	Agent(Agent* p_agent, Position* new_constraint);
 
@@ -48,13 +59,13 @@ public:
 		get_open_list() { return &open_list; };
 	AStarNodeList* get_open_list_hash_table() { return open_list_hash_table; };
 	AStarNodeList* get_closed_list() { return closed_list; };
-	std::unordered_map<int, bool,hash_struct>* get_constraints() { return &constraints; };
+	std::unordered_map<unsigned int, Position>* get_constraints() { return &constraints; };
 	World* get_world() { return world; };
 	std::string get_name() { return name; };
 
 #ifdef OPEN_LIST_DATA
 	/* agent_depth accessor function */
-	int get_depth() { return agent_depth; };
+	unsigned short get_depth() { return agent_depth; };
 #endif
 
 	/* Destructor */
@@ -79,8 +90,8 @@ private:
 	* and the value is simply a meaningless boolean value. The value is meaningless because
 	* the only thing that matters is whether or not the Position is in the hash table
 	*/
-	std::unordered_map<int, bool, hash_struct> constraints;
-	/* 
+	std::unordered_map<unsigned int, Position> constraints;
+	/*
 	* Sub-search to find nodes to remove from the OPEN and CLOSED list
 	* based on a new constraint.
 	*/
@@ -96,6 +107,9 @@ private:
 #ifdef OPEN_LIST_DATA
 	/* Agent's depth  (i.e. number of ancestor agents) */
 	int agent_depth;
+#endif
+#ifdef TIME_LIMIT
+	std::time_t start_time;
 #endif
 };
 

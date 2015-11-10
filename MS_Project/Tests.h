@@ -6,6 +6,8 @@
 
 class Coord;
 class World;
+class Agent;
+class CBSNode;
 
 class Tests
 {
@@ -33,6 +35,8 @@ public:
 	static std::string create_world_file();
 	static std::string create_agent_file();
 	static bool check_top_coord(std::stack<Coord>& path, Coord* check_coord);
+	static void cbs_node_cleanup(Agent* a_1, Agent* a_2, CBSNode* node);
+	static void cbs_tree_cleanup(Coord* c0, Coord* c1, Coord* c2);
 };
 
 #endif

@@ -5,6 +5,9 @@
 
 #include "Coordinates.h"
 
+class Position;
+class Coord;
+
 /*
 * A node saved on the CLOSED list during A* search
 */
@@ -22,23 +25,62 @@ public:
 
 	/* Accessor functions */
 	Position* get_pos() { return &pos; };
-	float get_cost() { return cost; };
-	AStarNode * get_parent();
-	int get_parent_count() { return parents.begin()->second.second; };
-	std::unordered_map<int, std::pair<AStarNode*, int> >* get_parents() { return &parents; };
+	float get_cost() const { return cost; };
+	Coord* get_parent();
+	std::unordered_map<unsigned int, Coord>* get_parents() { return &parents; };
+	bool get_del_mark() const { return del_mark; };
 
 	/* Add a parent if it is not already in the parents table */
-	bool add_parent(AStarNode* parent);
+	void add_parent(AStarNode* parent);
 	/* Remove a parent node (decrement the counter) */
-	bool dec_parent(AStarNode* parent);
+	void del_parent(Coord* parent);
+	/* Mark for deletion */
+	void mark_for_deletion() { del_mark = true; };
+	/* Print parents */
+	void print_parents();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	static int pub_count;
+
 
 private:
 	/* Parent node of the agent */
-	std::unordered_map<int,std::pair<AStarNode*,int> > parents;
+	std::unordered_map<unsigned int,Coord> parents;
 	/* Position (coordinates and depth) of the node*/
 	Position pos;
 	/* Cost of this node */
 	float cost;
+	/* Mark this node for deletion if it is in the OPEN list */
+	bool del_mark;
+
+
+
+
+
+
+
+
+
+
+
+
+	int count;
+
 };
 
 #endif

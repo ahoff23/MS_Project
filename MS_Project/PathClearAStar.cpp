@@ -4,10 +4,11 @@
 #include "Agent.h"
 #include "AStarNode.h"
 #include "Coordinates.h"
-#include "CantorPair.h"
 #include "World.h"
 #include "AStarNodeList.h"
 #include "Macros.h"
+#include "Exceptions.h"
+#include "HashStruct.h"
 
 #ifdef PCA_STAR_SIZE
 #include <iostream>
@@ -54,6 +55,10 @@ PathClearAStar::PathClearAStar(Agent* search, Position* start_pos)
 
 	/* Pointer to the CLOSED hash table of the parent A* Search */
 	parent_closed_list = search->get_closed_list();
+
+	/* Remove the constraint from both the OPEN and CLOSED list of the parent A* search */
+	parent_open_list->remove_hash(start_pos);
+	parent_closed_list->remove_hash(start_pos);
 }
 
 /* 
@@ -86,24 +91,42 @@ void PathClearAStar::path_clear_a_star()
 		int len = successors.size();
 		for (int i = 0; i < len; i++)
 		{
-			/* Make sure the successor is not constrained */
-			int hash = CantorPair::get_int(&successors[i]);
-			if (constraints->find(hash) != constraints->end())
-				continue;
-			
 			/*
 			* Remove the node from the OPEN or CLOSED list of the parent.
 			* If no parent is removed then do not generate this node.
 			*/
-			if (
-				!parent_open_list->delete_node(&successors[i], top->get_pos(), false) &&
-				!parent_closed_list->delete_node(&successors[i], top->get_pos(), true)
-				)
-				continue;
+			if (!(*goal == *successors[i].get_coord()))
+			{
+				/* If the node is in the A* OPEN list, do not add it to the PCA* OPEN list */
+				if (parent_open_list->delete_node(
+					&successors[i], top->get_pos()->get_coord(), false) != 0
+					)
+					continue;
+
+				/* Check the A* CLOSED list */
+				int closed_result = parent_closed_list->delete_node(
+					&successors[i], top->get_pos()->get_coord(),true
+					);
+
+
+				/* If the node cannot be found in either A* list, throw an error */
+				if (closed_result == 0)
+					throw TerminalException(
+					"Attempted to delete node not in either A* list."
+					);
+				/*
+				* If the node is found but not deleted,
+				* do not add it to the PCA* OPEN list 
+				*/
+				else if (closed_result == 1)
+					continue;
+			}
 
 			/* Check if the successor is in either the OPEN or CLOSED list */
-			AStarNode* check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
-			AStarNode* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
+			AStarNode* check_open_list = 
+				open_list_hash_table->check_duplicate(&successors[i]);
+			AStarNode* check_closed_list = 
+				closed_list->check_duplicate(&successors[i]);
 
 			/* If the successor is not a duplicate, add it to the OPEN list */
 			if (check_open_list == NULL && check_closed_list == NULL)
@@ -114,10 +137,10 @@ void PathClearAStar::path_clear_a_star()
 				open_list_hash_table->add_node(add_node);
 			}
 		}
-
+		
 		/* Add top to the CLOSED list unless a duplicate is found */
 		closed_list->add_node(top);
-
+		
 		/* Remove the node from the OPEN list without deleting the node */
 		open_list_hash_table->remove_hash(top);
 	}
@@ -158,12 +181,9 @@ void PathClearAStar::get_successors(Position* pos, std::vector<Position>* succes
 	*/
 	for (int i = 0; i < NUM_SUCCESSORS; i++)
 	{
-		/* Get the hash of the position */
-		int hash = CantorPair::get_int(possible_successors[i]);
-
 		if (
 			world->check_coord(possible_successors[i]->get_coord()) &&
-			constraints->find(hash) == constraints->end()
+			constraints->find(HashStruct::hash_pos(possible_successors[i])) == constraints->end()
 			)
 			successors->push_back(*possible_successors[i]);
 	}
@@ -184,7 +204,7 @@ float PathClearAStar::calc_cost(Position* pos)
 	int x_diff = pos->get_coord()->get_xcoord() - goal->get_xcoord();
 	int y_diff = pos->get_coord()->get_ycoord() - goal->get_ycoord();
 
-	float heuristic = sqrt(pow(x_diff, 2) + pow(y_diff, 2));
+	float heuristic = static_cast<float>(sqrt(pow(x_diff, 2) + pow(y_diff, 2)));
 
 	return heuristic + float(pos->get_depth());
 }

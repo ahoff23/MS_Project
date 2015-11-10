@@ -3,8 +3,7 @@
 
 #include <queue>
 #include <functional>
-
-#include "UnorderedMap.h"
+#include <unordered_map>
 
 class Agent;
 class AStarNodeList;
@@ -44,7 +43,7 @@ private:
 	* and the value is simply a meaningless boolean value. The value is meaningless because
 	* the only thing that matters is whether or not the Position is in the hash table
 	*/
-	std::unordered_map<int, bool, hash_struct>* constraints;
+	std::unordered_map<unsigned int, Position>* constraints;
 	/* Pointer to the OPEN hash table of the parent A* Search */
 	AStarNodeList* parent_open_list;
 	/* Pointer to the CLOSED hash table of the parent A* Search */
@@ -53,7 +52,6 @@ private:
 	float calc_cost(Position* pos);
 	/* Get a vector of successor positions of a given position */
 	void get_successors(Position* pos, std::vector<Position>* successors);
-
 };
 
 #endif

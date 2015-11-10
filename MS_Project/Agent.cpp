@@ -5,9 +5,10 @@
 #include "Agent.h"
 #include "AStarNode.h"
 #include "Coordinates.h"
-#include "CantorPair.h"
 #include "World.h"
 #include "AStarNodeList.h"
+#include "Exceptions.h"
+#include "HashStruct.h"
 
 #ifndef CBS_CLASSIC
 #include "PathClearAStar.h"
@@ -19,8 +20,17 @@
 * @param p_goal: The goal coordinate of the A* search
 * @param p_world: Pointer to the world this search will navigate
 * @param p_name: The agent's name
+* @param start_time: The start time of the CBS Tree search used 
+* for early termination time limits
 */
+#ifdef TIME_LIMIT
+Agent::Agent(
+	Coord* p_start, Coord* p_goal, World* p_world,
+	std::string p_name, std::time_t p_start_time
+	)
+#else
 Agent::Agent(Coord* p_start, Coord* p_goal, World* p_world, std::string p_name)
+#endif
 {
 	/* Get the goal coordinate of the A* Search */
 	goal = new Coord(p_goal);
@@ -35,7 +45,7 @@ Agent::Agent(Coord* p_start, Coord* p_goal, World* p_world, std::string p_name)
 	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
 	open_list_hash_table = new AStarNodeList(NULL);
 	closed_list = new AStarNodeList(NULL);
-	constraints = std::unordered_map<int, bool, hash_struct>();
+	constraints = std::unordered_map<unsigned int, Position>();
 
 	/* Place the root into the OPEN list */
 	Position start_pos = Position(p_start, 0);
@@ -55,6 +65,10 @@ Agent::Agent(Coord* p_start, Coord* p_goal, World* p_world, std::string p_name)
 #ifdef OPEN_LIST_DATA
 	/* Track the depth of the agent */
 	agent_depth = 0;
+#endif
+
+#ifdef TIME_LIMIT
+	start_time = p_start_time;
 #endif
 }
 
@@ -88,24 +102,24 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 
 	/* Copy the constraints and add the new constraint */
 	constraints = *(p_agent->get_constraints());
-	int hash = CantorPair::get_int(new_constraint);
-	constraints.emplace(hash, true);
+	constraints.emplace(HashStruct::hash_pos(new_constraint), *new_constraint);
 
 #ifdef CBS_CLASSIC
 	/* Using CBS Classic (no PCA*) */
-
 	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
 
 	/* Put the start node in the OPEN list */
 	Position start_pos = Position(p_agent->get_start(), 0);
 	AStarNode* start_node = new AStarNode(start_pos, NULL, calc_cost(&start_pos));
-	open_list.emplace(start_node);
+-	open_list.emplace(start_node);
 	open_list_hash_table->add_node(start_node);
-
 #else
-	/* Copy both OPEN lists */
-	open_list = *(p_agent->get_open_list());
+	/* Copy OPEN list hash table */
 	open_list_hash_table->node_copy(p_agent->get_open_list_hash_table());
+
+	/* Place each node in the OPEN list hash table into the minheap */
+	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
+	open_list_hash_table->heap_place(&open_list);
 
 	/* Copy the closed list as well	*/
 	closed_list->node_copy(p_agent->get_closed_list());
@@ -126,6 +140,10 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 	/* Increment the agents depth */
 	agent_depth = p_agent->get_depth() + 1;
 #endif
+
+#ifdef TIME_LIMIT
+	start_time = p_agent->start_time;
+#endif
 }
 
 /*
@@ -134,31 +152,39 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 */
 void Agent::add_conflict(Position* conflict)
 {
-	int hash = CantorPair::get_int(conflict);
-	constraints.emplace(hash, true);
+	constraints.emplace(HashStruct::hash_pos(conflict),*conflict);
 }
 
 /*
 * Perform the A* search and save the goal node as goal_node
 */
-
-
-#include <ctime>
-
 void Agent::find_solution()
 {
 #ifdef OPEN_LIST_DATA
-	/* Create a variable for the number of nodes popped from the OPEN list*/
+	/* Create a variable for the number of nodes popped from the OPEN list */
 	int popped = 0;
-	/* Create a variable for the number of nodes added to the OPEN list*/
+	/* Create a variable for the number of nodes added to the OPEN list */
 	int added = 0;
 #endif
 
 	while (!open_list.empty())
 	{
+#ifdef TIME_LIMIT
+		/* Make sure the time limit has not been exceeded */
+		if ((std::clock() - start_time) / CLOCKS_PER_SEC > TIME_LIMIT)
+			throw TerminalException("TIME LIMIT EXCEEDED");
+#endif
+
 		/* Pop min cost from open_list and remove from hash table */
 		AStarNode* heap_top = open_list.top();
 		open_list.pop();
+
+		/* Delete the node if it is marked for deletion */
+		if (heap_top->get_del_mark() == true)
+		{
+			delete heap_top;
+			continue;
+		}
 
 #ifdef A_STAR_SEARCH_DATA
 		std::cout << "COORD: " <<  *heap_top->get_pos()->get_coord() <<
@@ -172,19 +198,11 @@ void Agent::find_solution()
 
 		/* Find the node on the OPEN list hash table */
 		AStarNode* top;
-		AStarNode* check_parent = heap_top->get_parent();
-		if (check_parent != NULL)
-			top = open_list_hash_table->check_duplicate(
-				heap_top->get_pos(), check_parent->get_pos()
-				);
-		else
-			top = open_list_hash_table->check_duplicate(
-				heap_top->get_pos(), NULL
-				);
+		top = open_list_hash_table->check_duplicate(heap_top->get_pos());
 
-		/* Make sure the node has not been removed from the list by PathClearA* */
-		if (top == NULL)
-			continue;
+		/* Make sure the node has not been removed from the list by PCA* */
+		if (top == NULL || top != heap_top)
+			throw TerminalException("Could not find node from heap in hash table.");
 
 		/* Check if the node is a solution, if it is, return it */
 		if (*top->get_pos()->get_coord() == *goal)
@@ -210,7 +228,7 @@ void Agent::find_solution()
 			/* Display the length of the OPEN and CLOSED lists */
 			std::cout << "OPEN LIST SIZE: " << open_list_hash_table->get_list()->size() << std::endl;
 			std::cout << "CLOSED LIST SIZE: " << closed_list->get_list()->size() << std::endl;
-#endif
+#endif 
 			return;
 		}
 
@@ -222,29 +240,22 @@ void Agent::find_solution()
 		int len = successors.size();
 		for (int i = 0; i < len; i++)
 		{
-			/* Make sure the successor is not constrained */
-			int hash = CantorPair::get_int(&successors[i]);
-			if (constraints.find(hash) != constraints.end())
-				continue;
-
 			/* Check if the successor is in either the OPEN or CLOSED list */
-			AStarNode* check_open_list = open_list_hash_table->check_duplicate(&successors[i], top->get_pos());
-			AStarNode* check_closed_list = closed_list->check_duplicate(&successors[i], top->get_pos());
+			AStarNode* check_open_list = 
+				open_list_hash_table->check_duplicate(&successors[i]);
+			AStarNode* check_closed_list = 
+				closed_list->check_duplicate(&successors[i]);
 
 			/* If the successor is not a duplicate, add it to the OPEN list */
 			if (check_open_list == NULL && check_closed_list == NULL)
 			{
 				/* Create a new node and add it to the OPEN list (both heap and hash table) */
-				AStarNode* add_node = new AStarNode(successors[i], top, calc_cost(&successors[i]));
+				AStarNode* add_node = 
+					new AStarNode(successors[i], top, calc_cost(&successors[i]));
 
-				/*
-				* If add_node is added to the hash table, add it to the minheap,
-				* otherwise delete it 
-				*/
-				if (open_list_hash_table->add_node(add_node))
-					open_list.push(add_node);
-				else
-					delete add_node;
+				/* Add node to the hash table and minheap */
+				open_list_hash_table->add_node(add_node);
+				open_list.push(add_node);
 
 #ifdef OPEN_LIST_DATA
 				/* Increment added counter */
@@ -252,9 +263,9 @@ void Agent::find_solution()
 #endif
 			}
 			else if (check_open_list != NULL)
-				open_list_hash_table->add_node(check_open_list);
+				check_open_list->add_parent(top);
 			else if (check_closed_list != NULL)
-				closed_list->add_node(check_closed_list);
+				check_closed_list->add_parent(top);
 		}
 
 		/* Add top to the CLOSED list */
@@ -263,6 +274,9 @@ void Agent::find_solution()
 		/* Remove the node from the OPEN list without deleting the node */
 		open_list_hash_table->remove_hash(top);
 	}
+
+	/* You should never run out of nodes in A* search */
+	throw TerminalException("Ran out of nodes to expand in A*.");
 }
 
 /* 
@@ -273,11 +287,11 @@ void Agent::find_solution()
 void Agent::get_successors(Position* pos, std::vector<Position>* successors)
 {
 	/* Get the coordinates of pos */
-	int x_coord = pos->get_coord()->get_xcoord();
-	int y_coord = pos->get_coord()->get_ycoord();
+	unsigned short x_coord = pos->get_coord()->get_xcoord();
+	unsigned short y_coord = pos->get_coord()->get_ycoord();
 	
 	/* Get the new depth */
-	int depth = pos->get_depth() + 1;
+	unsigned short depth = pos->get_depth() + 1;
 
 	/* Number of possible successors */
 	const int NUM_SUCCESSORS = 9;
@@ -300,12 +314,9 @@ void Agent::get_successors(Position* pos, std::vector<Position>* successors)
 	*/
 	for (int i = 0; i < NUM_SUCCESSORS; i++)
 	{
-		/* Get the hash of the position */
-		int hash = CantorPair::get_int(possible_successors[i]);
-
 		if (
 			world->check_coord(possible_successors[i]->get_coord()) &&
-			constraints.find(hash) == constraints.end()
+			constraints.find(HashStruct::hash_pos(possible_successors[i])) == constraints.end()
 			)
 			successors->push_back(*possible_successors[i]);
 	}
@@ -325,22 +336,39 @@ std::stack<Coord> Agent::get_solution()
 	/* Initialize the stack */
 	std::stack<Coord> path = std::stack<Coord>();
 
-	/* Find the solution if it has not been found yet */
+	/* Find the solution if it has not yet been found */
 	if (goal_node == NULL)
 		find_solution();
 
 	/* Push the goal node's Coord object onto the stack */
 	path.push(goal_node->get_pos()->get_coord());
 
+	/* Get the depth of the goal node */
+	unsigned short depth = goal_node->get_pos()->get_depth();
+
 	/* Create a node pointer to traverse the nodes parents */
-	AStarNode* trav = goal_node->get_parent();
-
-	while (trav != NULL)
+	Coord* parent_coord = goal_node->get_parent();
+	
+	while (parent_coord != NULL)
 	{
-		path.push(trav->get_pos()->get_coord());
-		trav = trav->get_parent();
-	}
+		/* Place the coordinate on the list */
+		path.push(*parent_coord);
 
+		/* Update the cost of the parent coordinate (search backwards) */
+		depth--;
+
+		/* Construct a Position for the current coordinate */
+		Position pos = Position(*parent_coord, depth);
+
+		/* Find the current node */
+		AStarNode* curr_node = closed_list->check_duplicate(&pos);
+
+		if (curr_node == NULL)
+			throw TerminalException("Parent node in path search not found in CLOSED list.");
+
+		/* Get the parent coordinate */
+		parent_coord = curr_node->get_parent();
+	}
 	return path;
 }
 
@@ -401,7 +429,7 @@ float Agent::calc_cost(Position* pos)
 	int x_diff = pos->get_coord()->get_xcoord() - goal->get_xcoord();
 	int y_diff = pos->get_coord()->get_ycoord() - goal->get_ycoord();
 
-	float heuristic = sqrt(pow(x_diff, 2) + pow(y_diff, 2));
+	float heuristic = static_cast<float>(sqrt(pow(x_diff, 2) + pow(y_diff, 2)));
 
 	return heuristic + float(pos->get_depth());
 }
@@ -416,20 +444,8 @@ int Agent::get_cost()
 	if (goal_node == NULL)
 		find_solution();
 
-	/* Create a node pointer to traverse the nodes parents */
-	AStarNode* trav = goal_node->get_parent();
-
-	/* Agent cost */
-	int cost = 1;
-
-	/* Backtrack through each coordinate in the path */
-	while (trav != NULL)
-	{
-		trav = trav->get_parent();
-		cost++;
-	}
-
-	return cost;
+	/* The cost is equal to the depth of the goal node */
+	return goal_node->get_pos()->get_depth();
 }
 
 /*

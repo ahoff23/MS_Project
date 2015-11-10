@@ -12,6 +12,10 @@
 #include <iostream>
 #endif
 
+#ifdef TIME_LIMIT
+#include <ctime>
+#endif
+
 /* 
 * Operator for comparing two CBSNodes in the Compare struct for use in priority queue (minheap)
 * @param lhs: The first CBSNode to compare
@@ -30,6 +34,14 @@ bool Compare::operator()(const CBSNode* lhs, const CBSNode* rhs) const
 */
 CBSTree::CBSTree(std::string agent_file, std::string world_file)
 {
+#ifdef TIME_LIMIT
+	/* Get the start time of the algorithm */
+	start_time = std::clock();
+#endif
+
+	/* Initialize closed CBSNode list */
+	closed_nodes = std::vector<CBSNode*>();
+
 	/* Create a world for the agents to explore */
 	world = new World(world_file);
 
@@ -41,13 +53,6 @@ CBSTree::CBSTree(std::string agent_file, std::string world_file)
 
 	/* Place the root CBSNode onto the tree */
 	tree.push(root);
-
-	/* Initialize closed CBSNode list */
-	closed_nodes = std::vector<CBSNode*>();
-
-#ifdef TIME_LIMIT
-	start = time(0);
-#endif
 }
 
 /* 
@@ -74,7 +79,7 @@ void CBSTree::generate_agents(std::string txt_file)
 	/* Open the text file */
 	std::ifstream agent_file(txt_file);
 	if (!agent_file.is_open())
-		throw TerminalException("Agent file could not be opened.");
+		throw TerminalException("AGENT ERROR 1: Agent file could not be opened.");
 
 	/* Each line of the file contains new agent information */
 	std::string line;
@@ -100,7 +105,7 @@ void CBSTree::generate_agents(std::string txt_file)
 		if (index + 1 < len)
 			index++;
 		else
-			throw TerminalException("Improper agent file format.");
+			throw TerminalException("AGENT ERROR 2: Improper agent file format.");
 		name = line.substr(0, index - 1);
 
 		/* Index for the end of the coord */
@@ -108,7 +113,7 @@ void CBSTree::generate_agents(std::string txt_file)
 		if (index + 1 < len)
 			index_2 = index + 1;
 		else
-			throw TerminalException("Improper agent file format.");
+			throw TerminalException("AGENT ERROR 3: Improper agent file format.");
 
 		/* Get the substring containing the start coord */
 		while (line[index_2] != ')' && index_2 < len)
@@ -116,13 +121,13 @@ void CBSTree::generate_agents(std::string txt_file)
 
 		/* Make sure a ')' was found */
 		if (index == len)
-			throw TerminalException("Improper agent file format.");
+			throw TerminalException("AGENT ERROR 4: Improper agent file format.");
 
 		/* Create the start coordinate substring */
 		if (index_2 + 1 < len)
 			index_2++;
 		else
-			throw TerminalException("Improper agent file format.");
+			throw TerminalException("AGENT ERROR 5: Improper agent file format.");
 		coord_str = line.substr(index, index_2 - index);
 
 		/* Get the start coordinate */
@@ -132,14 +137,14 @@ void CBSTree::generate_agents(std::string txt_file)
 		if (index_2 + 1 < len)
 			index = index_2 + 1;
 		else
-			throw TerminalException("Improper agent file format.");
+			throw TerminalException("AGENT ERROR 6: Improper agent file format.");
 		
 		/* Get the end coordinate */
 		coord_str = line.substr(index, len - index);
 		goal = str_to_coord(coord_str);
 
 		/* Create a new agent and add it to the vector of agents */
-		Agent* add_agent = new Agent(start, goal, world, name);
+		Agent* add_agent = new Agent(start, goal, world, name,start_time);
 		agents.push_back(add_agent);
 
 		/* Clean up start and goal */
@@ -158,15 +163,22 @@ Coord* CBSTree::str_to_coord(std::string coord_str)
 	/* Get the string's length */
 	int len = coord_str.length();
 
+	/* ASCII value for carriage return */
+	const int CARRIAGE_RETURN = 13;
+
+	/* Ignore line breaks if one is found */
+	if (coord_str[len - 1] == CARRIAGE_RETURN)
+		len--;
+
 	/* Make sure the first charcter is a '(' and the last character is a ')'*/
 	if (coord_str[0] != '(' || coord_str[len - 1] != ')')
-		throw TerminalException("Improper agent file format.");
+		throw TerminalException("AGENT ERROR 7: Improper agent file format.");
 
 	/* Index for traversing the string's elements */
 	int index = 1;
 
 	/* Get the x coordinate*/
-	int x_coord = 0;
+	unsigned short x_coord = 0;
 	int add_val;
 	while (index < len && coord_str[index] != ',')
 	{
@@ -175,7 +187,7 @@ Coord* CBSTree::str_to_coord(std::string coord_str)
 
 		/* Make sure the character is a digit between 0 and 9, inclusive */
 		if (add_val < 0 || add_val > 9)
-			throw TerminalException("Improper agent file format.");
+			throw TerminalException("AGENT ERROR 8: Improper agent file format.");
 
 		x_coord += add_val;
 		index++;
@@ -183,11 +195,11 @@ Coord* CBSTree::str_to_coord(std::string coord_str)
 
 	/* Make sure there is another coordinate */
 	if (index >= len - 1)
-		throw TerminalException("Improper agent file format.");
+		throw TerminalException("AGENT ERROR 9: Improper agent file format.");
 	
 	/* Get the y coordinate */
 	index++;
-	int y_coord = 0;
+	unsigned short y_coord = 0;
 	while (index < len && coord_str[index] != ')')
 	{
 		y_coord *= 10;
@@ -195,7 +207,7 @@ Coord* CBSTree::str_to_coord(std::string coord_str)
 
 		/* Make sure the character is a digit between 0 and 9, inclusive */
 		if (add_val < 0 || add_val > 9)
-			throw TerminalException("Improper agent file format.");
+			throw TerminalException("AGENT ERROR 10: Improper agent file format.");
 
 		y_coord += add_val;
 		
@@ -215,9 +227,9 @@ CBSNode* CBSTree::get_solution()
 {
 	while (true)
 	{
-/* Stop the program early if testing for time */
 #ifdef TIME_LIMIT
-		if (difftime(time(0), start) > TIME_LIMIT)
+		/* Stop the program early if testing for time */
+		if ((std::clock() - start_time) / CLOCKS_PER_SEC > TIME_LIMIT)
 			throw TerminalException("TIME LIMIT EXCEEDED");
 #endif
 
@@ -236,13 +248,14 @@ CBSNode* CBSTree::get_solution()
 		/* Get the conflicts in the node and check if a solution was found */
 		if (!top->get_conflicts(&agent_1, conflict_1, &agent_2, conflict_2))
 			return top;
+
 #ifdef CONFLICT_DATA
 		else
 		{
 			std::cout << "Conflict 1: " << *conflict_1->get_coord() << " at depth " <<
 				conflict_1->get_depth() << std::endl;
 			std::cout << "Conflict 2: " << *conflict_2->get_coord() << " at depth " <<
-				conflict_2->get_depth() << std::endl << std::endl;
+				conflict_2->get_depth() << std::endl;
 		}
 #endif
 
@@ -311,9 +324,12 @@ CBSTree::~CBSTree()
 	}
 
 	/* Delete all closed CBS Nodes */
-	int num_closed_nodes = closed_nodes.size();
-	for (int i = 0; i < num_closed_nodes; i++)
-		delete closed_nodes[i];
+	while (!closed_nodes.empty())
+	{
+		CBSNode* del = closed_nodes.back();
+		closed_nodes.pop_back();
+		delete del;
+	}
 
 	/* Delete the world */
 	delete world;

@@ -1,23 +1,24 @@
 #include <iostream>
 
+#include "AStarNodeMultiMap.h"
 #include "AStarNodeList.h"
 #include "Coordinates.h"
 #include "AStarNode.h"
-#include "CantorPair.h"
 #include "Exceptions.h"
+#include "HashStruct.h"
 
 /* 
 * Default constructor 
 */
 AStarNodeList::AStarNodeList()
 {
-	list = std::unordered_map<int, AStarNode*, hash_struct>();
+	list = new AStarNodeMultiMap();
 	parent = NULL;
 }
 
-/* 
-* Constructor with a parent as a parameter 
-* @param parent: A pointer to the parent list that allows this list
+/*
+* Constructor with a parent as a parameter
+* @param p_parent: A pointer to the parent list that allows this list
 * to reuse the positions on the parent list i.e. the ancestor lists
 * of this lists are considered extensions of this list. This way, when
 * checking for a duplicate, this list and all of its ancestors will be
@@ -25,12 +26,12 @@ AStarNodeList::AStarNodeList()
 */
 AStarNodeList::AStarNodeList(AStarNodeList* p_parent)
 {
-	list = std::unordered_map<int, AStarNode*, hash_struct>();
+	list = new AStarNodeMultiMap();
 	parent = p_parent;
 }
 
 /* 
-* Check if a position is in the list 
+* Check if a node is in the list 
 * @param node: The A* node to check the list for
 * @return the A* Node Pointer if it is in the list, NULL otherwise
 */
@@ -40,63 +41,68 @@ AStarNode* AStarNodeList::check_duplicate(AStarNode* node)
 	if (node == NULL)
 		return NULL;
 
-	/* Get the hash of the node */
-	int hash = CantorPair::get_int(node);
+	/* Get the node's parent */
+	Coord* parent = node->get_parent();
 
-	/* Get the hash of the node's parent */
-	AStarNode* parent = node->get_parent();
-	int parent_hash;
+	/* A* Node found in the list */
+	AStarNode* found;
+
+	/* Having no parent means that the position must exist somewhere in the list */
 	if (parent == NULL)
-		parent_hash = -1;
+		found = check_duplicate(node->get_pos(), NULL);
+	/* Check for a duplicate with a parent */
 	else
-		parent_hash = CantorPair::get_int(parent->get_pos());
+		found = check_duplicate(node->get_pos(), parent);
 
-	/* Check for duplicates based on the hash values */
-	return check_duplicate(hash, parent_hash);
+	/* Make sure the returned node is the SAME node pointed to by the A* Node parameter */
+	if (found == NULL || node == found)
+		return found;
+
+	/*
+	* If the found node is not NULL and not the same node pointed to as the parameter,
+	* an error has occurred
+	*/
+	throw TerminalException(
+		"Found node is not a pointer to the same node as the node being sought."
+		);
 }
 
 /* 
 * Check if a position is in the list 
 * @param pos: The position to check the list for
-* @param pos_parent: The parent to check the list for
-* (the hash is composed of both pos and parent)
-* @return the A* Node Pointer if it is in the list, NULL otherwise
+* @param parent_coord: The parent to check the list for
+* @return the A* Node pointer if it is in the list, NULL otherwise
 */
-AStarNode* AStarNodeList::check_duplicate(Position* pos, Position* pos_parent)
+AStarNode* AStarNodeList::check_duplicate(Position* pos, Coord* parent_coord)
 {
-	/* Get the hash of the position */
-	int hash = CantorPair::get_int(pos);
+	/* Find the node in the list based on the position only */
+	AStarNode* found = list->find(pos);
 
-	/* Get the hash of the node's parent */
-	int parent_hash = CantorPair::get_int(pos_parent);
-	
-	/* Check for duplicates based on the hash values */
-	return check_duplicate(hash, parent_hash);
-}
-
-/*
-* Check if a position is in the list
-* @param hash: The hash of the position being sought
-* @param parent_hash: The hash of the position of this node's parent
-* @return the A* Node Pointer if it is in the list, NULL otherwise
-*/
-AStarNode* AStarNodeList::check_duplicate(int hash, int parent_hash)
-{
-	/* Check this list for the position */
-	auto it = list.find(hash);
-
-	/* If the position is found in this list, check if its parent is as well */
-	if (it != list.end())
+	/* If the node is found search for its parent */
+	if (found != NULL)
 	{
-		std::unordered_map<int, std::pair<AStarNode*, int> >* parents = it->second->get_parents();
-		auto it_2 = parents->find(parent_hash);
+		/* Get the node's list of parents */
+		std::unordered_map<unsigned int, Coord>* parents = found->get_parents();
+
+		/* If there is no parent, make sure the parent list's size is zero and return the node */
+		if (parent_coord == NULL)
+		{
+			if (parents->size() == 0)
+				return found;
+
+			/* If the list has parents, throw an error */
+			throw TerminalException("Node searched for without a parent has parents.");
+		}
+
+		/* Search for the parent coordinate in the list of parents */
+		auto it = parents->find(HashStruct::hash_coord(parent_coord));
 
 		/* Parent was not found */
-		if (it_2 == parents->end())
+		if (it == parents->end())
 			return NULL;
 
 		/* Parent was found*/
-		return it->second;
+		return found;
 	}
 
 	/* If this list has no parent, the node is not a duplicate */
@@ -104,119 +110,112 @@ AStarNode* AStarNodeList::check_duplicate(int hash, int parent_hash)
 		return NULL;
 
 	/* Recursively check all parents of this list */
-	return parent->check_duplicate(hash, parent_hash);
+	return parent->check_duplicate(pos, parent_coord);
+}
+
+/*
+* Check if a position is in the list given the hash 
+* (this function does not consider the parent)
+* @param pos: The position being searched for
+* @return the node being searched for or NULL if the node is not found
+*/
+AStarNode* AStarNodeList::check_duplicate(Position* pos)
+{
+	/* Find the node in the list based on the position only */
+	AStarNode* found = list->find(pos);
+
+	/* Return NULL if the node is not found */
+	if (found != NULL)
+		return found;
+
+	/* If this list has no parent, the node is not a duplicate */
+	if (parent == NULL)
+		return NULL;
+
+	/* Recursively check all parents of this list */
+	return parent->check_duplicate(pos);
 }
 
 /* 
 * Add an AStarNode to the list
 * @param add_node: The AStarNode to add
-* @return true if a new node was added to the list, false if a node was simply editted
 */
-bool AStarNodeList::add_node(AStarNode* add_node)
+void AStarNodeList::add_node(AStarNode* add_node)
 {
-	/* Make sure the add_node pointer is allocated */
+	/* Make sure the add_node is allocated */
 	if (add_node == NULL)
-		return false;
+		throw TerminalException("NULL node added to AStarNodeList.");
 
-	/* Get the hash corresponding to this AStarNode */
-	int hash = CantorPair::get_int(add_node);
+	/* Make sure the node is not already in the list */
+	AStarNode* found = list->find(add_node->get_pos());
+	if (found != NULL)
+		throw TerminalException("Pre-existing node added to AStarNodeList.");
 
-	/* Check if the node is already on the list */
-	auto it = list.find(hash);
-
-	/*
-	* If the node is already on the list, just add the parent to the
-	* list of parents in the node
-	*/
-	if (it != list.end())
-	{
-		it->second->add_parent(add_node->get_parent());
-		return false;
-	}
-	else
-	{
-		/* Place the AStarNode in the hash table */
-		list.emplace(hash, add_node);
-		return true;
-	}
+	/* Add the node to the list */
+	list->emplace(add_node);
 }
 
 /* 
 * Remove a parent from a node and delete it if it runs out of parents
-* @param node: The node to remove
-* @param del_mem: True if the node should be deleted from memory, false otherwise
-* @return true if the node is is deleted, false if it is found or found but not deleted
-* (i.e. the counter is greater than 1)
+* @param pos: The position of the node to remove
+* @param parent_pos: The parent of the position to remove
+* (only remove a position/parent combo)
+* @param del_mem: True if the node should be deleted here, false if it should
+* simply be marked for deletion (so the OPEN list heap does not contain deleted nodes)
+* @return 0 if the node is not found, 
+* 1 if it is found but not deleted, 2 if it is found and deleted
 */
-bool AStarNodeList::delete_node(Position* pos, Position* parent_pos, bool del_mem)
+int AStarNodeList::delete_node(Position* pos, Coord* parent_coord, bool del_mem)
 {
-	/* Get the hash value of the node */
-	int hash = CantorPair::get_int(pos);
-
 	/* Find the node iterator */
-	auto it = list.find(hash);
+	AStarNode* found = list->find(pos);
 
 	/* Make sure the node exists */
-	if (it == list.end())
-		return false;
-
-	/* Get the hash value of the node's parent */
-	int parent_hash = CantorPair::get_int(parent_pos);
-
-	/* Get the parent hash table */
-	std::unordered_map<int, std::pair<AStarNode*, int> >* parents = it->second->get_parents();
-
-	/* Find the parent iterator */
-	auto parent_it = parents->find(parent_hash);
-
-	/* Make sure the node exists */
-	if (parent_it == parents->end())
-		return false;
-
+	if (found == NULL)
+		return 0;
+	
 	/* Decrement the parent */
-	bool erase = it->second->dec_parent(parent_it->second.first);
+	found->del_parent(parent_coord);
 
-	/* If the node has no more parents */
-	if (erase == false)
+	/* If the node has no more parents after the deletion of this parent */
+	if (found->get_parents()->size() == 0)
 	{
-		/* Delete the node pointed to by the list */
+		/* Delete the node pointed to by the list or mark it for deletion */
 		if (del_mem == true)
-			delete it->second;
+			delete found;
+		else
+			found->mark_for_deletion();
 
 		/* remove it from the list */
-		list.erase(it);
+		list->erase(pos);
 
-		return true;
+		return 2;
 	}
 
 	/* The node was found but not deleted */
-	return false;
+	return 1;
 }
 
 /*
 * Remove a reference to a node in the list without deleting or
-* decrementing the nodes counter
+* decrementing the node's counter
 * @param node: The node to remove
 */
 void AStarNodeList::remove_hash(AStarNode* node)
 {
-	/* Get the has value of the node */
-	int hash = CantorPair::get_int(node);
-
 	/* Remove the node from the list */
-	list.erase(hash);
+	list->erase(node->get_pos());
 }
 
-/* 
-* Copy an existing AStarNodeList into this one
-* @param rhs: The AStarNodeList to copy
+/*
+* Remove a reference to a node in the list without deleting or
+* decrementing the node's counter
+* @param pos: The position of the node to remove
 */
-AStarNodeList & AStarNodeList::operator=(AStarNodeList& rhs)
+void AStarNodeList::remove_hash(Position* pos)
 {
-	list = *(rhs.get_list());
-	parent = rhs.get_parent();
-
-	return rhs;
+	/* Remove the node from the list */
+	list->erase(pos);
 }
 
 /* 
@@ -226,41 +225,32 @@ AStarNodeList & AStarNodeList::operator=(AStarNodeList& rhs)
 void AStarNodeList::node_copy(AStarNodeList* copy_list)
 {
 	/* Clear this list */
-	list.clear();
-	
-	/* Copy and place each node into this list */
-	for (auto it = copy_list->get_list()->begin(); it != copy_list->get_list()->end(); ++it)
-	{
-		AStarNode* new_node = new AStarNode(it->second);
-		int hash = CantorPair::get_int(new_node);
-		list.emplace(hash, new_node);
-	}
+	list->clear();
+	copy_list->get_list()->node_copy(list);
 }
 
 /*
-* Print the list 
+* Place all elements in the list into a heap 
+* @param heap: The heap to place each element from this list into
 */
-void AStarNodeList::print_list()
+void AStarNodeList::heap_place(std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >* heap)
 {
-	std::cout << "PRINTING LIST" << std::endl;
-	for (auto it = list.begin(); it != list.end(); ++it)
-	{
-		std::cout << *it->second->get_pos()->get_coord() << " - " << it->second->get_pos()->get_depth();
-
-		if (it->second->get_parent() == NULL)
-			std::cout << " - no parent" << std::endl;
-		else
-			std::cout << " - " << *it->second->get_parent()->get_pos()->get_coord() << std::endl;
-	}
+	list->heap_place(heap);
 }
 
+/*
+* Get the size of the multimap
+* @return the size of the multimap
+*/
+int AStarNodeList::get_size() const
+{
+	return list->size();
+}
 
-/* 
-* Destructor 
+/*
+* Destructor
 */
 AStarNodeList::~AStarNodeList()
 {
-	/* Delete all closed nodes in this ClosedList */
-	for (auto it = list.begin(); it != list.end(); ++it)
-		delete it->second;
+	delete list;
 }

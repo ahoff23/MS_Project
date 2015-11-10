@@ -1,13 +1,15 @@
 #include <string>
 
 #include "Coordinates.h"
+#include "Exceptions.h"
+#include "Macros.h"
 
 /*
 * Constructor with X and Y coordinates given as parameters
 * @param x: The X coordinate of the coord
 * @param y: The Y coordinate of the coord
 */
-Coord::Coord(int x, int y)
+Coord::Coord(unsigned short x, unsigned short y)
 {
 	xcoord = x;
 	ycoord = y;
@@ -28,7 +30,7 @@ Coord::Coord(Coord* copy_coord)
 */
 Coord::Coord()
 {
-	/* Default values are impossible as long as negative coordinates are not allowed */
+	/* Default values (overflow because coordinates are unsigned) */
 	xcoord = -1;
 	ycoord = -1;
 }
@@ -86,7 +88,7 @@ bool Coord::operator!=(Coord& rhs)
 * @param p_coord: 2D coordinate (X and Y)
 * @param p_depth: Depth of the coordinate in the agent's path
 */
-Position::Position(Coord p_coord, int p_depth)
+Position::Position(Coord p_coord, unsigned short p_depth)
 {
 	coord = p_coord;
 	depth = p_depth;
@@ -98,15 +100,22 @@ Position::Position(Coord p_coord, int p_depth)
 * @param y_coord: Y coordinate
 * @param p_depth: Depth of the coordinate in the agent's path
 */
-Position::Position(int x_coord, int y_coord, int p_depth) : coord(x_coord,y_coord)
+Position::Position(
+	unsigned short x_coord, unsigned short y_coord, unsigned short p_depth
+	) : coord(x_coord, y_coord)
 {
+#ifdef SEARCH_DEPTH
+	if (p_depth > SEARCH_DEPTH)
+		throw TerminalException("Exceeded max search depth.");
+#endif
+
 	depth = p_depth;
 }
 
 /* Default constructor */
 Position::Position() : coord()
 {
-	/* Default value is an impossible value */
+	/* Default value (overflow because depth is unsigned) */
 	depth = -1;
 }
 
@@ -141,4 +150,25 @@ bool Position::operator==(Position& rhs)
 		return true;
 
 	return false;
+}
+
+/*
+* Output stream operator
+* @param out: The Position to output
+* @return ostream containing data to be outputted to console
+*/
+std::ostream& operator<<(std::ostream& out, Position& pos)
+{
+	out << "(" << pos.get_coord()->get_xcoord() << "," << pos.get_coord()->get_ycoord() << 
+		") at depth " << pos.get_depth();
+	return out;
+}
+
+/*
+* Constructor 
+*/
+AgentPos::AgentPos(int p_agent_num, Position* p_pos)
+{
+	agent_num = p_agent_num;
+	pos = *p_pos;
 }

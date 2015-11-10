@@ -6,7 +6,9 @@
 
 #include "TestGenerator.h"
 #include "Coordinates.h"
-#include "UnorderedMap.h"
+#include "Utils.h"
+#include "AStarNodeMultiMap.h"
+#include "HashStruct.h"
 
 /*
 * Constructor: Set the number of tests to generate 
@@ -14,8 +16,13 @@
 * @param num_rows: The number of rows to generate in each world file
 * @param num_cols: The number of columns to generate in each world file
 */
-TestGenerator::TestGenerator(int p_test_count, int p_num_rows, int p_num_cols, int p_num_agents)
+TestGenerator::TestGenerator(
+	int p_test_count, unsigned short p_num_rows, unsigned short p_num_cols, unsigned short p_num_agents
+	)
 {
+	/* Seed the random number generator */
+	srand(time(NULL));
+
 	/* Set the number of tests to generate */
 	test_count = p_test_count;
 
@@ -36,9 +43,6 @@ void TestGenerator::generate_files(float obs_prob)
 	/* Suffix of each test file */
 	std::string suffix = ".txt";
 
-	/* Seed the random number generator */
-	srand(time(NULL));
-
 	/*
 	* Boolean vector where elements are true if the corresponding 
 	* coordinate is free, false if it is occupied by an obstacle 
@@ -50,7 +54,7 @@ void TestGenerator::generate_files(float obs_prob)
 	{
 		/* Name of the file */
 		std::string test_file = "TestWorlds/test_file";
-		test_file += std::to_string(i);
+		test_file += Utils::to_string(i);
 		test_file += suffix;
 
 		/* Create and open a new file */
@@ -82,7 +86,7 @@ void TestGenerator::generate_files(float obs_prob)
 			}
 			/* Write the row to the file */
 			out_file << write_row;
-			out_file << "\n";
+			out_file << "\r\n";
 
 			/* Clear the row string */
 			write_row = "";
@@ -99,7 +103,6 @@ void TestGenerator::generate_files(float obs_prob)
 	}
 }
 
-
 /*
 * Generate agent files 
 * @param num_test: The test number for this test
@@ -110,19 +113,18 @@ void TestGenerator::generate_agents(int test_num, std::vector<bool>* obs_coords)
 	/* Prefix for agent names */
 	std::string agent_name_prefix = "Agent_";
 
-	/* Seed the random number generator */
-	srand(time(NULL));
-
 	/* Start coordinates already occupied */
-	std::unordered_map<int, bool> starts = std::unordered_map<int, bool>();
+	std::unordered_map<unsigned int, bool> starts = 
+		std::unordered_map<unsigned int, bool>();
 
 	/* Goal coordinates already occupied */
-	std::unordered_map<int, bool> goals = std::unordered_map<int, bool>();
+	std::unordered_map<unsigned int, bool> goals =
+		std::unordered_map<unsigned int, bool>();
 
 	/* Name of the file */
 	std::string suffix = ".txt";
 	std::string test_file = "TestAgents/test_file";
-	test_file += std::to_string(test_num);
+	test_file += Utils::to_string(test_num);
 	test_file += suffix;
 
 	/* Create and open a new file */
@@ -133,12 +135,12 @@ void TestGenerator::generate_agents(int test_num, std::vector<bool>* obs_coords)
 	{
 		/* Add the agent's name */
 		out_file << agent_name_prefix;
-		out_file << std::to_string(i);
+		out_file << Utils::to_string(i);
 		out_file << " ";
 
 		/* Start and goal coordinates for this agent */
-		Coord start_coord;
-		Coord goal_coord;
+		Coord* start_coord;
+		Coord* goal_coord;
 
 		/* Generate the start and end coordinates. They cannot be the same. */
 		while (true)
@@ -146,21 +148,29 @@ void TestGenerator::generate_agents(int test_num, std::vector<bool>* obs_coords)
 			start_coord = gen_coord(&starts, obs_coords);
 			goal_coord = gen_coord(&goals, obs_coords);
 
-			if (start_coord != goal_coord)
+			if (*start_coord != *goal_coord)
 				break;
+			else
+			{
+				/* Coords do not work (start can't equal goal), clear them and try again */
+				delete start_coord;
+				delete goal_coord;
+			}
 		}
 
 		/* Add the start and goal coordinate to their respective hash tables */
-		int start_hash = CantorPair::get_int(&start_coord);
-		starts.emplace(start_hash, true);
-		int goal_hash = CantorPair::get_int(&goal_coord);
-		starts.emplace(goal_hash, true);
+		starts.emplace(HashStruct::hash_coord(start_coord), true);
+		starts.emplace(HashStruct::hash_coord(goal_coord), true);
 
 		/* Write the start and goal coordinates to the file */
-		out_file << start_coord;
+		out_file << *start_coord;
 		out_file << " ";
-		out_file << goal_coord;
-		out_file << "\n";
+		out_file << *goal_coord;
+		out_file << "\r\n";
+
+		/* Clean up */
+		delete start_coord;
+		delete goal_coord;
 	}
 	/* Close the file */
 	out_file.close();
@@ -172,8 +182,9 @@ void TestGenerator::generate_agents(int test_num, std::vector<bool>* obs_coords)
 * @param obs_coords: Coordinates containing an obstacle
 * @return a coordinate that is an empty space and is not occupied by another agent
 */
-Coord TestGenerator::gen_coord(
-	std::unordered_map<int, bool>* blocked_coords, std::vector<bool>* obs_coords
+Coord* TestGenerator::gen_coord(
+	std::unordered_map<unsigned int, bool>* blocked_coords,
+	std::vector<bool>* obs_coords
 	)
 {
 	/* X and Y coordinates*/
@@ -181,7 +192,7 @@ Coord TestGenerator::gen_coord(
 	int y_coord;
 
 	/* Coordinate to return */
-	Coord coord;
+	Coord* coord = new Coord(1,1);
 
 	/* Repeat until a coord is generated */
 	while (true)
@@ -189,15 +200,15 @@ Coord TestGenerator::gen_coord(
 		/* Generate a possible coordinate */
 		x_coord = rand() % num_cols;
 		y_coord = rand() % num_rows;
-		coord = Coord(x_coord, y_coord);
+		coord->set_x(x_coord);
+		coord->set_y(y_coord);
 
 		/* Make sure the coordinate is not blocked by an obstacle */
 		if ((*obs_coords)[y_coord * num_cols + x_coord] == false)
 			continue;
 
 		/* Make sure the coordinate is not occupied by another agent */
-		int hash = CantorPair::get_int(&coord);
-		if (blocked_coords->find(hash) == blocked_coords->end())
+		if (blocked_coords->find(HashStruct::hash_coord(coord)) == blocked_coords->end())
 			return coord;
 	}
 }

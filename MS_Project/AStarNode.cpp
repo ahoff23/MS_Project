@@ -1,24 +1,48 @@
 #include "AStarNode.h"
-#include "CantorPair.h"
+#include "Exceptions.h"
+#include "HashStruct.h"
+
+
+int AStarNode::pub_count = 0;
+#include <iostream>
+
 
 /*
 * Default constructor
 */
 AStarNode::AStarNode()
 {
+
+	count = pub_count;
+	pub_count++;
+
+
+
+
+
+
+
+
+
+
+
+
 	/* Set the position as the default position */
 	Position* temp = new Position();
 	pos = *temp;
 	delete temp;
 
 	/* No parent for this node */
-	parents = std::unordered_map<int,std::pair<AStarNode*,int> >();
+	parents = std::unordered_map<unsigned int, Coord>();
 
 	/* 
 	* Default cost is -1 so the user can confirm this node has
 	* not been initalized
 	*/
 	cost = -1;
+
+	/* Not marked for deletion by default */
+	del_mark = false;
 }
 
 /*
@@ -29,6 +53,17 @@ AStarNode::AStarNode()
 */
 AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
 {
+
+	count = pub_count;
+	pub_count++;
+
+
+
+
+
+
+
+
 	/* Set the position equal to the parameter position */
 	pos = p_pos;
 
@@ -36,102 +71,99 @@ AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
 	cost = p_cost;
 
 	/* Initialize the parent hash table */
-	parents = std::unordered_map<int, std::pair<AStarNode*, int> >();
-	
+	parents = std::unordered_map<unsigned int, Coord>();
+
 	/* Add the parent node */
-	int hash = CantorPair::get_int(p_parent);
-	std::pair<AStarNode*, int> pair = std::pair<AStarNode*, int>(p_parent, 1);
-	parents.emplace(hash,pair);
+	if (p_parent != NULL)
+	{
+		Coord parent_coord = *p_parent->get_pos()->get_coord();
+		parents.emplace(HashStruct::hash_coord(&parent_coord),parent_coord);
+	}
+	
+	/* Not marked for deletion by default */
+	del_mark = false;
 }
 
 /*
 * Constructor to create an AStarNode from another AStarNode
-* @param open_node: The OpenNode on which this AStarNode will be based
+* @param a_star_node: The A* Node on which this A* Node will be based
 */
 AStarNode::AStarNode(AStarNode* a_star_node)
 {
-	/* Set the position equal to the OpenNode's position */
+
+	count = pub_count;
+	pub_count++;
+
+
+
+
+
+
+
+
+
+	/* Set the position equal to the parameter A* Node's position */
 	pos = *(a_star_node->get_pos());
 
 	/* Set the cost of the node */
 	cost = a_star_node->get_cost();
 
-	/* Get open_node's parent */
+	/* Get parameter A* Node's parents */
 	parents = *a_star_node->get_parents();
+
+	/* Not marked for deletion by default */
+	del_mark = false;
 }
 
 /*
-* Get the first A* Node position of this node
-* @return the first parent A* Node in the hash table of parents
+* Get the first parent coordinate of this position
+* @return the first parent Coord in the hash table of parents
 */
-AStarNode * AStarNode::get_parent()
+Coord* AStarNode::get_parent()
 { 
 	if (parents.size() == 0)
 		return NULL;
-
-	return parents.begin()->second.first; 
+	return &parents.begin()->second;
 }
 
 /*
 * Add a parent if it is not already in the parents table 
-* @return true if a new parent is added, false if it already is in the table
+* @param parent: The parent node to add
 */
-bool AStarNode::add_parent(AStarNode* parent)
+void AStarNode::add_parent(AStarNode* parent)
 {
-	/* Get the hash of the parent */
-	int hash = CantorPair::get_int(parent);
+	/* Get the Coord of the parent */
+	Coord parent_coord = parent->get_pos()->get_coord();
 
 	/* Check if the parent is in the table */
-	auto it = parents.find(hash);
+	auto it = parents.find(HashStruct::hash_coord(&parent_coord));
 
-	/* Parent is not in the table */
+	/* Place the parent in the hash table if it is not already there */
 	if (it == parents.end())
 	{
-		/*
-		* Create a pair for the parent 
-		* The first element is a pointer to the parent A* Node and
-		* the second is a counter of how many paths from the parent
-		* lead to this position
-		*/
-		std::pair<AStarNode*, int> pair = std::pair<AStarNode*, int>(parent, 1);
-
-		/* Place the parent in the hash table */
-		parents.emplace(hash, pair);
-		return true;
+		parents.emplace(HashStruct::hash_coord(&parent_coord), parent_coord);
+		return;
 	}
-
-	/* Parent was already in the table, increment its counter */
-	it->second.second += 1;
-	return false;
+		
+	/* Parent was already in the table, an error must have occurred */
+	throw TerminalException("Added pre-existing parent to parent list of an A* Node");
 }
 
 /*
-* Remove a parent node (decrement the counter) 
-* @param parent: The parent node to remove
-* @return true if the node has any parents left, false if it has none
+* Remove a parent node from the list of parents
+* @param parent: The coordinate of the parent node to remove
 */
-bool AStarNode::dec_parent(AStarNode* parent)
+void AStarNode::del_parent(Coord* parent)
 {
-	/* Get the hash value of the parent */
-	int hash = CantorPair::get_int(parent);
+	/* Find the parent iterator */
+	auto parent_it = parents.find(HashStruct::hash_coord(parent));
 
-	/* Search for the parent in the parents hash table */
-	auto it = parents.find(hash);
+	/* Make sure the node exists */
+	if (parent_it == parents.end())
+		throw TerminalException("Tried to decrement a non-existant parent node.");
 
-	/* If the parent is found, decrement its counter by 1 */
-	if (it != parents.end())
-	{
-		it->second.second -= 1;
-
-		/* If the counter is decreased to 0, remove the parent */
-		if (it->second.second == 0)
-			parents.erase(hash);
-
-		/* If there are no parents left, return false */
-		if (parents.size() == 0)
-			return false;
-	}
-	return true;
+	/* Remove the parent from the list */
+	parents.erase(parent_it);
 }
 
 /*
@@ -148,4 +180,12 @@ bool AStarNode::operator<(const AStarNode& comp) const
 bool AStarNode::operator>(const AStarNode& comp) const
 {
 	return cost > comp.cost;
+}
+
+/* Print parents */
+void AStarNode::print_parents()
+{
+	std::cout << "PARENTS: " << std::endl;
+	for (auto it = parents.begin(); it != parents.end(); it++)
+		std::cout << it->second << std::endl;
 }

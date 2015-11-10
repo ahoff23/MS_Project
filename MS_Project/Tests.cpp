@@ -3,7 +3,6 @@
 
 #include "Tests.h"
 #include "Coordinates.h"
-#include "CantorPair.h"
 #include "AStarNode.h"
 #include "AStarNodeList.h"
 #include "World.h"
@@ -28,11 +27,6 @@ bool Tests::run_tests()
 		return false;	
 	else
 		std::cout << "Position Tests Passed." << std::endl;
-
-	if (!cantor_pair_tests())
-		return false;
-	else
-		std::cout << "Cantor Pair Tests Passed." << std::endl;
 
 	if (!closed_list_tests())
 		return false;
@@ -128,82 +122,6 @@ bool Tests::coordinate_equality(Coord* coord_1, Coord* coord_2)
 		coord_1->get_ycoord() != coord_2->get_ycoord()
 		)
 		return false;
-	return true;
-}
-
-/* 
-* Test CantorPair functions 
-* @return true if all tests pass or print an error and return false if one test fails.
-*/
-bool Tests::cantor_pair_tests()
-{
-	/* 
-	* Test Cantor Pair function for Position object by creating Positions
-	* that are similar but should all have unique Cantor Pair hashes.
-	*/
-
-	/* 3 numbers that will be rotated in ordered to slightly differentiate the Positions*/
-	int num_1= 1;
-	int num_2 = 2;
-	int num_3 = 3;
-
-	/* Number of positions to create */
-	const int NUM_POSITIONS = 5;
-
-	/* Create slightly different Position objects */
-	Position* pos_array[NUM_POSITIONS];
-	pos_array[0] = new Position(num_1, num_2, num_3);
-	pos_array[1] = new Position(num_1, num_2, num_1);
-	pos_array[2] = new Position(num_2, num_1, num_3);
-	pos_array[3] = new Position(num_3, num_2, num_1);
-	pos_array[4] = new Position(num_1, num_3, num_2);
-
-	/* Create hash objects for each Position */
-	int hash_array[NUM_POSITIONS];
-	hash_array[0] = CantorPair::get_int(pos_array[0]);
-	hash_array[1] = CantorPair::get_int(pos_array[1]);
-	hash_array[2] = CantorPair::get_int(pos_array[2]);
-	hash_array[3] = CantorPair::get_int(pos_array[3]);
-	hash_array[4] = CantorPair::get_int(pos_array[4]);
-
-	/* Make sure all hashes are unique */
-	for (int i = 0; i < NUM_POSITIONS; i++)
-	{
-		for (int j = 0; j < NUM_POSITIONS; j++)
-		{
-			if (hash_array[i] == hash_array[j] && i != j)
-			{
-				std::cout << "FAILED: Cantor pairs not unique." << std::endl;
-
-				/* Clean up */
-				for (int k = 0; k < NUM_POSITIONS; k++)
-					delete pos_array[k];
-
-				return false;
-			}
-		}
-	}
-
-	/* Clean up */
-	for (int k = 0; k < NUM_POSITIONS; k++)
-		delete pos_array[k];
-
-	/* 
-	* Test Position Cantor Pair by making sure a specifically calculated Cantor Pair hash 
-	* equals the expected value.
-	*/
-	int expected_hash_val = (((num_1 + num_2) * (num_1 + num_2 + 1)) / 2) + num_2;
-	expected_hash_val = 
-		(((expected_hash_val + num_3) * (expected_hash_val + num_3 + 1)) / 2) + num_3;
-	if (hash_array[0] != expected_hash_val)
-	{
-		std::cout << 
-			"FAILED: Incorrect hash value calculated from Cantor Pair for Position object." <<
-			std::endl;
-
-		return false;
-	}
-
 	return true;
 }
 
@@ -477,7 +395,11 @@ bool Tests::a_star_tests()
 	Coord goal = Coord(2, 0);
 
 	/* Create the A* Search */
+#ifdef TIME_LIMIT
+	Agent* search = new Agent(&start, &goal, test_world, "agent_name", std::clock());
+#else
 	Agent* search = new Agent(&start, &goal, test_world, "agent_name");
+#endif
 
 	/* Get the solution */
 	std::stack<Coord> path = search->get_solution();
@@ -546,7 +468,11 @@ bool Tests::path_clear_a_star_tests()
 	Coord goal = Coord(2, 0);
 
 	/* Create the A* Search and find the solution */
+#ifdef TIME_LIMIT
+	Agent* search = new Agent(&start, &goal, test_world, "agent_name",std::clock());
+#else
 	Agent* search = new Agent(&start, &goal, test_world, "agent_name");
+#endif
 	search->find_solution();
 
 	/* 
@@ -619,6 +545,8 @@ bool Tests::path_clear_a_star_tests()
 	delete [] coords;
 	delete constrained_search;
 	delete test_world;
+
+	return true;
 }
 
 /* 
@@ -670,13 +598,21 @@ bool Tests::cbs_node_tests()
 	Coord start_1 = Coord(0, 0);
 	Coord goal_1 = Coord(2, 0);
 	std::string name_1 = "Agent 1";
+#ifdef TIME_LIMIT
+	Agent* a_1 = new Agent(&start_1, &goal_1, test_world, name_1,std::clock());
+#else
 	Agent* a_1 = new Agent(&start_1, &goal_1, test_world, name_1);
+#endif
 
 	/* Create second agent */
 	Coord start_2 = Coord(2, 0);
 	Coord goal_2 = Coord(0, 0);
 	std::string name_2 = "Agent 2";
+#ifdef TIME_LIMIT
+	Agent* a_2 = new Agent(&start_2, &goal_2, test_world, name_2,std::clock());
+#else
 	Agent* a_2 = new Agent(&start_2, &goal_2, test_world, name_2);
+#endif
 
 	/* Create a vector containing both agents */
 	std::vector<Agent*> agents = std::vector<Agent*>();
@@ -699,9 +635,7 @@ bool Tests::cbs_node_tests()
 	if (found_conflict == false)
 	{
 		std::cout << "FAILED: No CBSNode conflict found." << std::endl;
-		delete a_1;
-		delete a_2;
-		delete node;
+		Tests::cbs_node_cleanup(a_1, a_2, node);
 		return false;
 	}
 
@@ -715,9 +649,7 @@ bool Tests::cbs_node_tests()
 		)
 	{
 		std::cout << "FAILED: Incorrect CBSNode conflict." << std::endl;
-		delete a_1;
-		delete a_2;
-		delete node;
+		Tests::cbs_node_cleanup(a_1, a_2, node);
 		return false;
 	}
 
@@ -731,9 +663,7 @@ bool Tests::cbs_node_tests()
 	if (found_conflict == false)
 	{
 		std::cout << "FAILED: No second CBSNode conflict found." << std::endl;
-		delete a_1;
-		delete a_2;
-		delete node;
+		Tests::cbs_node_cleanup(a_1, a_2, node);
 		delete conflict_node;
 		return false;
 	}
@@ -748,17 +678,13 @@ bool Tests::cbs_node_tests()
 		)
 	{
 		std::cout << "FAILED: Incorrect second CBSNode conflict." << std::endl;
-		delete a_1;
-		delete a_2;
-		delete node;
+		Tests::cbs_node_cleanup(a_1, a_2, node);
 		delete conflict_node;
 		return false;
 	}
 
 	/* Clean up dynamic memory */
-	delete a_1;
-	delete a_2;
-	delete node;
+	Tests::cbs_node_cleanup(a_1, a_2, node);
 	delete conflict_node;
 	delete conflict_1;
 	delete conflict_2;
@@ -767,6 +693,18 @@ bool Tests::cbs_node_tests()
 	return true;
 }
 
+/*
+* Cleanup cbs_node_test function
+* @param a_1: Pointer to delete
+* @param a_2: Pointer to delete
+* @param node: Pointer to delete
+*/
+void Tests::cbs_node_cleanup(Agent* a_1, Agent* a_2, CBSNode* node)
+{
+	delete a_1;
+	delete a_2;
+	delete node;
+}
 
 /*
 * CBSTree Functions
@@ -800,30 +738,22 @@ bool Tests::cbs_tree_tests()
 	Coord* c2 = new Coord(2, 2);
 	if (Tests::check_top_coord(sol_0, c0) == false)
 	{
-		delete c0;
-		delete c1;
-		delete c2;
+		Tests::cbs_tree_cleanup(c0, c1, c2);
 		return false;
 	}
 	if (Tests::check_top_coord(sol_0, c1) == false)
 	{
-		delete c0;
-		delete c1;
-		delete c2;
+		Tests::cbs_tree_cleanup(c0, c1, c2);
 		return false;
 	}
 	if (Tests::check_top_coord(sol_0, c2) == false)
 	{
-		delete c0;
-		delete c1;
-		delete c2;
+		Tests::cbs_tree_cleanup(c0, c1, c2);
 		return false;
 	}
 
 	/* Clean up */
-	delete c0;
-	delete c1;
-	delete c2;
+	Tests::cbs_tree_cleanup(c0, c1, c2);
 
 	/* Check the solution path for the second agent */
 	c0 = new Coord(1, 0);
@@ -831,30 +761,22 @@ bool Tests::cbs_tree_tests()
 	c2 = new Coord(1, 2);
 	if (Tests::check_top_coord(sol_1, c0) == false)
 	{
-		delete c0;
-		delete c1;
-		delete c2;
+		cbs_tree_cleanup(c0, c1, c2);
 		return false;
 	}
 	if (Tests::check_top_coord(sol_1, c1) == false)
 	{
-		delete c0;
-		delete c1;
-		delete c2;
+		Tests::cbs_tree_cleanup(c0, c1, c2);
 		return false;
 	}
 	if (Tests::check_top_coord(sol_1, c2) == false)
 	{
-		delete c0;
-		delete c1;
-		delete c2;
+		Tests::cbs_tree_cleanup(c0, c1, c2);
 		return false;
 	}
 
 	/* Clean up */
-	delete c0;
-	delete c1;
-	delete c2;
+	Tests::cbs_tree_cleanup(c0, c1, c2);
 
 	/* Check the solution path for the third agent */
 	c0 = new Coord(2, 2);
@@ -862,30 +784,22 @@ bool Tests::cbs_tree_tests()
 	c2 = new Coord(0, 1);
 	if (Tests::check_top_coord(sol_2, c0) == false)
 	{
-		delete c0;
-		delete c1;
-		delete c2;
+		Tests::cbs_tree_cleanup(c0, c1, c2);
 		return false;
 	}
 	if (Tests::check_top_coord(sol_2, c1) == false)
 	{
-		delete c0;
-		delete c1;
-		delete c2;
+		Tests::cbs_tree_cleanup(c0, c1, c2);
 		return false;
 	}
 	if (Tests::check_top_coord(sol_2, c2) == false)
 	{
-		delete c0;
-		delete c1;
-		delete c2;
+		Tests::cbs_tree_cleanup(c0, c1, c2);
 		return false;
 	}
 
 	/* Clean up */
-	delete c0;
-	delete c1;
-	delete c2;
+	Tests::cbs_tree_cleanup(c0, c1, c2);
 
 	/* Remove the test files */
 	std::remove(world_file.c_str());
@@ -893,6 +807,19 @@ bool Tests::cbs_tree_tests()
 
 	/* All tests passed */
 	return true;
+}
+
+/*
+* Cleanup cbs_tree_test function
+* @param c0: Pointer to delete
+* @param c1: Pointer to delete
+* @param c2: Pointer to delete
+*/
+void Tests::cbs_tree_cleanup(Coord* c0, Coord* c1, Coord* c2)
+{
+	delete c0;
+	delete c1;
+	delete c2;
 }
 
 /*

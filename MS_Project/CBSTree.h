@@ -4,7 +4,7 @@
 #include <queue>
 #include <string>
 #include <functional>
-#include <time.h>
+#include <ctime>
 
 #include "Macros.h"
 
@@ -47,7 +47,7 @@ private:
 	Coord* str_to_coord(std::string coord_str);
 
 #ifdef TIME_LIMIT
-	time_t start;
+	std::time_t start_time;
 #endif
 };
 

@@ -1,9 +1,7 @@
-#include <unordered_map>
-
 #include "CBSNode.h"
 #include "Agent.h"
 #include "Coordinates.h"
-#include "CantorPair.h"
+#include "HashStruct.h"
 
 /* 
 * Constructor for the first node in the CBSTree
@@ -30,6 +28,13 @@ CBSNode::CBSNode(std::vector<Agent*>* p_agents)
 	}
 }
 
+/*
+* Constructor for non-root nodes in the CBS tree
+* @param parent_node: CBSNode to base this CBSNode on
+* @param agent_num: The number of the agent who will have a conflict added
+* to its list of conflicts
+* @param conflict: The conflict to add to a single agent (agent_num)
+*/
 CBSNode::CBSNode(CBSNode* parent_node, int agent_num, Position* conflict)
 {
 	/* Set the list of agents to point to the parent's list of agents */
@@ -58,25 +63,19 @@ CBSNode::CBSNode(CBSNode* parent_node, int agent_num, Position* conflict)
 * @param conflict_2: Conflict position for agent 2
 * @return true if a conflict is found, false otherwise
 */
+#include <iostream>
 bool CBSNode::get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Position* conflict_2)
 {
 	/* Current and previous coordinates in the path */
 	Coord curr_coord;
 	Coord prev_coord;
 
-	/* Hash of the current and previous coordinate */
-	int hash;
-	int prev_hash;
-
 	/* Depth of the search */
 	int depth = 0;
 
-	/* Hash values if the previous and current coordinates were swapped */
-	int swap_curr_hash;
-	int swap_prev_hash;
-
 	/* Hash table of agent numbers based on a coordinate and depth */
-	std::unordered_map<int, int> occupied_coords;
+	std::unordered_multimap<unsigned int, AgentPos*> occupied_coords =
+		std::unordered_multimap<unsigned int, AgentPos*>();
 
 	/* Path of an individual agent */
 	std::stack<Coord> path;
@@ -91,12 +90,11 @@ bool CBSNode::get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Po
 		/* Initialize the depth */
 		depth = 0;
 
-		/* Get the coordinate and hash of the start coordinate */		
+		/* Get the start coordinate */
 		prev_coord = path.top();
-		prev_hash = CantorPair::get_int(&prev_coord, depth);
 		path.pop();
 
-		/* 
+		/*
 		* Iterate through each coordinate in the path except
 		* the first coordinate because it is assumed the starting
 		* coordinate of each agent is unique
@@ -108,15 +106,15 @@ bool CBSNode::get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Po
 			path.pop();
 			depth++;
 
-			/* Get the hash of this coordinate and depth */
-			hash = CantorPair::get_int(&curr_coord, depth);
+			/* Create a position based on the coordinate and depth */
+			Position curr_pos = Position(curr_coord, depth);
 
 			/* Check if that coordinate is already occupied at that depth */
-			auto it = occupied_coords.find(hash);
+			auto it = find_it(&curr_pos, &occupied_coords);
 			if (it != occupied_coords.end())
 			{
 				*agent_1 = i;
-				*agent_2 = it->second;
+				*agent_2 = it->second->get_agent_num();
 
 				/* Set agent 1's conflict */
 				conflict_1->set_x(curr_coord.get_xcoord());
@@ -126,22 +124,24 @@ bool CBSNode::get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Po
 				/* Agent 2 has the same conflict as agent 1*/
 				*conflict_2 = *conflict_1;
 
+				cleanup_occ_coords(&occupied_coords);
 				return true;
 			}
 
 			/* Check if there is a 'swap' conflict */
-			swap_curr_hash = CantorPair::get_int(&prev_coord, depth);
-			swap_prev_hash = CantorPair::get_int(&curr_coord, depth - 1);
-			auto swap_curr_it = occupied_coords.find(swap_curr_hash);
-			auto swap_prev_it = occupied_coords.find(swap_prev_hash);
+			Position swap_curr_pos = Position(prev_coord, depth);
+			Position swap_prev_pos = Position(curr_coord, depth - 1);
+			
+			auto swap_curr_it = find_it(&swap_curr_pos, &occupied_coords);
+			auto swap_prev_it = find_it(&swap_prev_pos, &occupied_coords);
 			if (
 				swap_curr_it != occupied_coords.end() &&
 				swap_prev_it != occupied_coords.end() &&
-				swap_curr_it->second == swap_prev_it->second
+				swap_curr_it->second->get_agent_num() == swap_prev_it->second->get_agent_num()
 				)
 			{
 				*agent_1 = i;
-				*agent_2 = swap_curr_it->second;
+				*agent_2 = swap_curr_it->second->get_agent_num();
 
 				/* Set agent 1's conflict */
 				conflict_1->set_x(curr_coord.get_xcoord());
@@ -152,20 +152,33 @@ bool CBSNode::get_conflicts(int* agent_1, Position* conflict_1, int* agent_2, Po
 				conflict_2->set_x(prev_coord.get_xcoord());
 				conflict_2->set_y(prev_coord.get_ycoord());
 				conflict_2->set_depth(depth);
+				cleanup_occ_coords(&occupied_coords);
 				return true;
 			}
 
-			/* No conflict add this coordinate and depth to the hash table */
-			occupied_coords.emplace(hash, i);
+			/* No conflict, add this coordinate and depth to the hash table */
+			AgentPos* add_pos = new AgentPos(i,&curr_pos);
+			occupied_coords.emplace(HashStruct::hash_pos(&curr_pos), add_pos);
 
 			/* Set the previous coord and hash to the current coord and hash */
 			prev_coord = curr_coord;
-			prev_hash = hash;
 		}
 	}
-	
 	/* No conflict was found */
+	cleanup_occ_coords(&occupied_coords);
 	return false;
+}
+
+/* 
+* Cleanup occupied coords hash table 
+* @param occupied_coords: Hash table to delete each AgentPos from
+*/
+void CBSNode::cleanup_occ_coords(
+	std::unordered_multimap<unsigned int, AgentPos*>* occupied_coords
+	)
+{
+	for (auto it = occupied_coords->begin(); it != occupied_coords->end(); it++)
+		delete it->second;
 }
 
 /* 
@@ -183,6 +196,37 @@ CBSNode & CBSNode::operator=(CBSNode& rhs)
 	new_agent_num = -1;
 
 	return rhs;
+}
+
+/* Find a position in a hash table that allows some duplicates */
+std::unordered_multimap<unsigned int, AgentPos*>::iterator CBSNode::find_it(
+	Position* pos, std::unordered_multimap<unsigned int, AgentPos*>* map
+	)
+{
+	/* Find the first iterator pointing to a key of pos */
+	std::unordered_multimap<unsigned int, AgentPos*>::iterator it =
+		map->find(HashStruct::hash_pos(pos));
+
+	/* If no node contains this key, return a NULL pointer */
+	if (it == map->end())
+		return map->end();
+
+	/* Store the key of the iterator */
+	unsigned int hash_val = HashStruct::hash_pos(pos);
+
+	/* Check all elements with this key */
+	while (it->first == hash_val)
+	{
+		/* Compare coordinates and depth */
+		if (*pos == *it->second->get_pos())
+			return it;
+
+		/* Move to the next element */
+		it++;
+	}
+
+	/* The exact node could not be found */
+	return map->end();
 }
 
 /* 

@@ -1,11 +1,14 @@
 #ifndef ASTARNODELIST_H
 #define ASTARNODELIST_H
 
-#include "UnorderedMap.h"
+#include <queue>
+#include <functional>
 
+class AStarNodeMultiMap;
 class Position;
 class AStarNodePointer;
 class AStarNode;
+class Coord;
 
 /*
 * List of A* Nodes stored as a hash table. The hash
@@ -21,14 +24,14 @@ public:
 
 	/* Check if a node is in the list */
 	AStarNode* check_duplicate(AStarNode* node);
-	/* Check if a position is in the list */
-	AStarNode* check_duplicate(Position* pos, Position* pos_parent);
-	/* Check if a position is in the list given the hash */
-	AStarNode* check_duplicate(int hash, int parent_hash);
+	/* Check if a position is in the list with its parent */
+	AStarNode* check_duplicate(Position* pos, Coord* parent_coord);
+	/* Check if a position is in the list independent of it parent */
+	AStarNode* check_duplicate(Position* pos);
 	/* Add a node to the list */
-	bool add_node(AStarNode* add_node);
+	void add_node(AStarNode* add_node);
 	/* Remove a parent from a node and delete it if it runs out of parents */
-	bool delete_node(Position* pos, Position* parent_pos, bool del_mem);
+	int delete_node(Position* pos, Coord* parent_coord, bool del_mem);
 	/* Copy by making new copies of each node in the parameter list */
 	void node_copy(AStarNodeList* copy_list);
 	/* 
@@ -36,22 +39,20 @@ public:
 	* decrementing the node's counter
  	*/
 	void remove_hash(AStarNode* node);
-	/* Print the list */
-	void print_list();
-
-	/* Operators */
-	AStarNodeList & operator=(AStarNodeList& rhs);
+	void remove_hash(Position* pos);
+	/* Place all elements in the list into a heap */
+	void heap_place(std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >* heap);
 
 	/* Accessors */
-	std::unordered_map<int, AStarNode*, hash_struct>* get_list() { return &list; };
-	AStarNodeList* get_parent() { return parent; };
-	int get_size() { return list.size(); };
+	AStarNodeMultiMap* get_list() { return list; };
+	AStarNodeList* get_parent() const { return parent; };
+	int get_size() const;
 
 	/* Destructor */
 	~AStarNodeList();
 private:
 	/* Hash table of all positions in this iteration of A* search */
-	std::unordered_map<int, AStarNode*, hash_struct> list;
+	AStarNodeMultiMap* list;
 	/* Pointer to the parent ClosedList to avoid redundancy */
 	AStarNodeList* parent;
 };

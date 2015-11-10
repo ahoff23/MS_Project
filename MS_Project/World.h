@@ -20,9 +20,9 @@ private:
 	/* Boolean matrix where true means the space is open, false if it is blocked */
 	bool * coords;
 	/* Maximum X coordinate of the matrix (starts at 0) */
-	int max_x;
+	unsigned short max_x;
 	/* Maximum Y coordinate of the matrix(starts at 0) */
-	int max_y;
+	unsigned short max_y;
 };
 
 #endif

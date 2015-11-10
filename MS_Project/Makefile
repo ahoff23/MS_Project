@@ -2,8 +2,9 @@ CC=g++
 CFLAGS = -c -std=c++11 -pg -I.
 LDFLAGS=-pg
 SOURCES=main.cpp Agent.cpp AStarNode.cpp AStarNodeList.cpp \
-	CantorPair.cpp CBSNode.cpp CBSTree.cpp Coordinates.cpp \
-	Exceptions.cpp PathClearAStar.cpp Tests.cpp World.cpp
+	AStarNodeMultiMap.cpp CBSNode.cpp CBSTree.cpp \
+	Coordinates.cpp Exceptions.cpp PathClearAStar.cpp \
+	Tests.cpp World.cpp TestGenerator.cpp Utils.cpp HashStruct.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=main
 

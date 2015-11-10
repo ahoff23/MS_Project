@@ -9,8 +9,8 @@ World::World()
 {
 	/* Default values not possible values for error checking */
 	coords = NULL;
-	max_x = -1;
-	max_y = -1;
+	max_x = 0;
+	max_y = 0;
 }
 
 /*
@@ -32,18 +32,27 @@ World::World(std::string txt_file)
 	/* ASCII value for carriage return */
 	const int CARRIAGE_RETURN = 13;
 
-	/* Default values for max_x and max_y */
+	/* 
+	* Default values for max_x and max_y 
+	* NOTE: Since max_x and max_y are unsigned, this will actually cause an overflow.
+	*/
 	max_x = -1;
 	max_y = -1;
+
+	/* Set to true if at least one line read */
+	bool read_line = false;
 
 	/* Read the file once to get max_x and max_y */
 	std::string line;
 	while (getline(world_file, line))
 	{
+		if (read_line == false)
+			read_line = true;
+
 		max_y++;
 
 		/* Line length if the first character is at index 0 */
-		int line_length = int(line.length()) - 1;
+		unsigned short line_length = static_cast<unsigned short>(line.length()) - 1;
 
 		/* If the final character is a newline, '\n', decrement the line length to ignore it */
 		if (line[line_length] == CARRIAGE_RETURN)
@@ -55,7 +64,7 @@ World::World(std::string txt_file)
 	world_file.close();
 
 	/* Make sure the world has at least one coordinate */
-	if (max_x == -1 || max_y == -1)
+	if (read_line == false)
 		throw TerminalException("World text file must have at least one coordinate.");
 
 	/* Number of x coordinates in each row and y coordinates in each column */
@@ -118,8 +127,8 @@ World::World(std::string txt_file)
 bool World::check_coord(Coord* coord)
 {
 	/* Get the X and Y coordinates of the coord */
-	int x_coord = coord->get_xcoord();
-	int y_coord = coord->get_ycoord();
+	unsigned short x_coord = coord->get_xcoord();
+	unsigned short y_coord = coord->get_ycoord();
 
 	/* Check if the coordinate exists */
 	if (x_coord > max_x || y_coord > max_y || x_coord < 0 || y_coord < 0)
@@ -138,7 +147,7 @@ bool World::check_coord(Coord* coord)
 void World::print_world()
 {
 	/* Initialize the x coordinate tracker */
-	int x_coord = 0;
+	unsigned short x_coord = 0;
 
 	/* Iterate through each element in coords */
 	for (int i = 0; i < (max_x + 1) * (max_y + 1); i++)
@@ -155,7 +164,6 @@ void World::print_world()
 
 		x_coord++;
 	}
-
 	std::cout << std::endl;
 }
 
