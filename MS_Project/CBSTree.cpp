@@ -32,6 +32,7 @@ bool Compare::operator()(const CBSNode* lhs, const CBSNode* rhs) const
 * @param agent_file: The name of the file containing each agent
 * @param world_file: The name of the file containing the world
 */
+#include <iostream>
 CBSTree::CBSTree(std::string agent_file, std::string world_file)
 {
 #ifdef TIME_LIMIT
@@ -138,7 +139,7 @@ void CBSTree::generate_agents(std::string txt_file)
 			index = index_2 + 1;
 		else
 			throw TerminalException("AGENT ERROR 6: Improper agent file format.");
-		
+
 		/* Get the end coordinate */
 		coord_str = line.substr(index, len - index);
 		goal = str_to_coord(coord_str);
@@ -225,7 +226,7 @@ Coord* CBSTree::str_to_coord(std::string coord_str)
 */
 CBSNode* CBSTree::get_solution()
 {
-	while (true)
+	while (!tree.empty())
 	{
 #ifdef TIME_LIMIT
 		/* Stop the program early if testing for time */
@@ -260,10 +261,28 @@ CBSNode* CBSTree::get_solution()
 #endif
 
 		/* No solution was found, create two new nodes to add to the heap */
-		CBSNode* add_node_1 = new CBSNode(top, agent_1, conflict_1);
-		CBSNode* add_node_2 = new CBSNode(top, agent_2, conflict_2);
-		tree.push(add_node_1);
-		tree.push(add_node_2);
+		try
+		{
+			/* Only add a node if it does not run out of nodes in the A* search */
+			CBSNode* add_node_1 = new CBSNode(top, agent_1, conflict_1);
+			tree.push(add_node_1);
+		}
+		catch (OutOfNodesException& ex)
+		{
+			/* No need to do anything in this catch block */
+			;
+		}
+		try
+		{
+			/* Only add a node if it does not run out of nodes in the A* search */
+			CBSNode* add_node_2 = new CBSNode(top, agent_2, conflict_2);
+			tree.push(add_node_2);
+		}
+		catch (OutOfNodesException& ex)
+		{
+			/* No need to do anything in this catch block */
+			;
+		}
 
 		/* Conflict pointers no longer necessary (copied by value when creating new CBSNodes) */
 		delete conflict_1;
@@ -272,6 +291,8 @@ CBSNode* CBSTree::get_solution()
 		/* Store the explored CBS Node on the closed list */
 		closed_nodes.push_back(top);
 	}
+	/* Throw an error if you run out of CBS Nodes */
+	throw TerminalException("Ran out of CBS nodes.");
 }
 
 /* 
@@ -284,7 +305,7 @@ void CBSTree::file_print_solution()
 
 	/* Make sure a solution node is returned */
 	if (solution_node == NULL)
-		return;
+		throw TerminalException("No path found.");
 
 	/* Get the solution agents */
 	std::vector<Agent*> solution_agents = *solution_node->get_agents();
@@ -326,9 +347,9 @@ CBSTree::~CBSTree()
 	/* Delete all closed CBS Nodes */
 	while (!closed_nodes.empty())
 	{
-		CBSNode* del = closed_nodes.back();
+		del_node = closed_nodes.back();
 		closed_nodes.pop_back();
-		delete del;
+		delete del_node;
 	}
 
 	/* Delete the world */

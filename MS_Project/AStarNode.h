@@ -27,7 +27,7 @@ public:
 	Position* get_pos() { return &pos; };
 	float get_cost() const { return cost; };
 	Coord* get_parent();
-	std::unordered_map<unsigned int, Coord>* get_parents() { return &parents; };
+	std::unordered_map<unsigned int, Coord>* get_parents() { return parents_ptr; };
 	bool get_del_mark() const { return del_mark; };
 
 	/* Add a parent if it is not already in the parents table */
@@ -38,49 +38,21 @@ public:
 	void mark_for_deletion() { del_mark = true; };
 	/* Print parents */
 	void print_parents();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	static int pub_count;
-
-
+	/* Copy the parents list if it is written to */
+	void copy_parents();
 private:
-	/* Parent node of the agent */
-	std::unordered_map<unsigned int,Coord> parents;
+	/* Pointer to the parents of the agent */
+	std::unordered_map<unsigned int,Coord>* parents_ptr;
+	/* Vector that contains the parents of the agent - only used if copy_on_write is used */
+	std::unordered_map<unsigned int, Coord> parents;
+	/* True if the parents_ptr points to the parents vector in this AStarNode */
+	bool parents_copied;
 	/* Position (coordinates and depth) of the node*/
 	Position pos;
 	/* Cost of this node */
 	float cost;
 	/* Mark this node for deletion if it is in the OPEN list */
 	bool del_mark;
-
-
-
-
-
-
-
-
-
-
-
-
-	int count;
-
 };
 
 #endif

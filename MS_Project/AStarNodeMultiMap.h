@@ -29,9 +29,12 @@ public:
 		);
 	/* Print out all elements in the map */
 	void print_map();
-	
+	/* Search the map as a linked list for a specific Position */
+	AStarNode* search_node(Position* pos);
+
 	/* Accessors */
 	unsigned int size() const {	return map.size(); };
+	std::unordered_multimap<unsigned int, AStarNode*>* get_map() { return &map; };
 
 	/* Destructor */
 	~AStarNodeMultiMap();

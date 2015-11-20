@@ -23,7 +23,7 @@ public:
 	PathClearAStar(Agent* search, Position* start_pos);
 
 	/* Clear the OPEN and CLOSED lists of descendants of start_pos */
-	void path_clear_a_star();
+	bool path_clear_a_star();
 
 	/* Destructor */
 	~PathClearAStar();
@@ -48,10 +48,19 @@ private:
 	AStarNodeList* parent_open_list;
 	/* Pointer to the CLOSED hash table of the parent A* Search */
 	AStarNodeList* parent_closed_list;
+	/* The name of the PCA* search agent */
+	std::string name;
+
 	/* Calculate the cost of a position */
 	float calc_cost(Position* pos);
 	/* Get a vector of successor positions of a given position */
 	void get_successors(Position* pos, std::vector<Position>* successors);
+	/* Remove nodes from the OPEN list that were missed due a slightly different ordering */
+	void remove_extra_open_nodes();
+	/* Delete a parent from successor node */
+	bool del_successors(Position* pos, Coord* parent);
+	/* Decrement and add a successor to the list of unexpanded Positions */
+	void dec_push_unexpanded(Position* pos, Coord* parent, std::queue<Position>* unexpanded);
 };
 
 #endif

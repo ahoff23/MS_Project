@@ -42,6 +42,8 @@ public:
 	void remove_hash(Position* pos);
 	/* Place all elements in the list into a heap */
 	void heap_place(std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >* heap);
+	/* Search the map as a linked list for a specific Position */
+	AStarNode* search_node(Position* pos);
 
 	/* Accessors */
 	AStarNodeMultiMap* get_list() { return list; };

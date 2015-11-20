@@ -97,7 +97,7 @@ private:
 	*/
 	PathClearAStar* path_clear;
 	/* Calculate the cost of a position */
-	float calc_cost(Position* pos);
+	double calc_cost(Position* pos);
 	/* Name of the agent */
 	std::string name;
 

@@ -18,4 +18,16 @@ private:
 	std::string error_msg;
 };
 
+/*
+* Exception for when an A* search runs out of nodes
+*/
+class OutOfNodesException : public std::exception
+{
+public:
+	OutOfNodesException() {};
+	/* Return the error message when caught */
+	virtual const char * what() const throw() { return "Ran out of nodes in A* search."; };
+private:
+};
+
 #endif

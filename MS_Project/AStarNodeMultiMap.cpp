@@ -15,7 +15,7 @@ AStarNodeMultiMap::AStarNodeMultiMap()
 }
 
 /*
-* Place a new A* Node in the map 
+* Place a new A* Node in the map
 * @param node: The node to place in the map
 */
 void AStarNodeMultiMap::emplace(AStarNode* node)
@@ -60,7 +60,7 @@ bool AStarNodeMultiMap::erase(Position* pos)
 }
 
 /* 
-* Get an iterator based on a position 
+* Get an iterator based on a position
 * @param pos: The position to use as a key
 * @return an iterator if a corresponding position is found, or the end of the map if not
 */
@@ -79,7 +79,7 @@ std::unordered_multimap<unsigned int, AStarNode*>::iterator
 	unsigned int hash_val = HashStruct::hash_pos(pos);
 
 	/* Check all elements with this key */
-	while (it->first == hash_val)
+	while (it != map.end() && it->first == hash_val)
 	{
 		/* Compare coordinates and depth */
 		if (*pos == *it->second->get_pos())
@@ -107,7 +107,10 @@ void AStarNodeMultiMap::node_copy(AStarNodeMultiMap* copy_map)
 	}
 }
 
-/* Place all elements in the map into a heap */
+/* 
+* Place all elements in the map into a heap 
+* @param heap: The heap to place all elements into
+*/
 void AStarNodeMultiMap::heap_place(
 	std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >* heap
 	)
@@ -125,6 +128,23 @@ void AStarNodeMultiMap::print_map()
 	std::cout << "LIST CONTENTS: " << std::endl;
 	for (auto it = map.begin(); it != map.end(); it++)
 		std::cout << it->second->get_pos() << std::endl;
+}
+
+/*
+* Search the map as a linked list for a specific Position 
+* @param pos: The position to search the list for
+*/
+AStarNode* AStarNodeMultiMap::search_node(Position* pos)
+{
+	auto it = map.begin();
+
+	while (it != map.end())
+	{
+		if (*pos == *it->second->get_pos())
+			return it->second;
+		it++;
+	}
+	return NULL;
 }
 
 /* 

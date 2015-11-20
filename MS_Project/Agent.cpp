@@ -111,22 +111,19 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 	/* Put the start node in the OPEN list */
 	Position start_pos = Position(p_agent->get_start(), 0);
 	AStarNode* start_node = new AStarNode(start_pos, NULL, calc_cost(&start_pos));
--	open_list.emplace(start_node);
+	open_list.emplace(start_node);
 	open_list_hash_table->add_node(start_node);
 #else
 	/* Copy OPEN list hash table */
 	open_list_hash_table->node_copy(p_agent->get_open_list_hash_table());
 
 	/* Place each node in the OPEN list hash table into the minheap */
-	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
+	open_list = 
+		std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
 	open_list_hash_table->heap_place(&open_list);
 
 	/* Copy the closed list as well	*/
 	closed_list->node_copy(p_agent->get_closed_list());
-	/**********************************************************************
-	* UNCOMMENT THIS IF YOU WANT TO GO BACK TO USING PARENT CLOSED LISTS
-	closed_list = new AStarNodeList(p_astar->get_closed_list());
-	**********************************************************************/
 
 	/* Remove descendants of new_constraint from the OPEN and CLOSED lists */
 	if (new_constraint != NULL)
@@ -174,17 +171,18 @@ void Agent::find_solution()
 		if ((std::clock() - start_time) / CLOCKS_PER_SEC > TIME_LIMIT)
 			throw TerminalException("TIME LIMIT EXCEEDED");
 #endif
-
 		/* Pop min cost from open_list and remove from hash table */
 		AStarNode* heap_top = open_list.top();
 		open_list.pop();
 
+#ifndef CBS_CLASSIC
 		/* Delete the node if it is marked for deletion */
 		if (heap_top->get_del_mark() == true)
 		{
 			delete heap_top;
 			continue;
 		}
+#endif
 
 #ifdef A_STAR_SEARCH_DATA
 		std::cout << "COORD: " <<  *heap_top->get_pos()->get_coord() <<
@@ -199,18 +197,26 @@ void Agent::find_solution()
 		/* Find the node on the OPEN list hash table */
 		AStarNode* top;
 		top = open_list_hash_table->check_duplicate(heap_top->get_pos());
-
+		
 		/* Make sure the node has not been removed from the list by PCA* */
 		if (top == NULL || top != heap_top)
+		{
+			std::cout << "POS: "<< *heap_top->get_pos() << std::endl;
+			std::cout << "GOAL: " << *goal << std::endl;
+			std::cin.get();
 			throw TerminalException("Could not find node from heap in hash table.");
+		}
 
 		/* Check if the node is a solution, if it is, return it */
 		if (*top->get_pos()->get_coord() == *goal)
 		{
 			goal_node = top;
 
+			/* Place the goal node back into the OPEN list (it will be removed by PCA*) */
+			open_list.push(top);
+
 			/* Remove the node from the OPEN list without deleting the node */
-			open_list_hash_table->remove_hash(top);
+//			open_list_hash_table->remove_hash(top);
 
 #ifdef A_STAR_SEARCH_DATA
 			std::cout << "END OF SEARCH" << std::endl;
@@ -228,7 +234,7 @@ void Agent::find_solution()
 			/* Display the length of the OPEN and CLOSED lists */
 			std::cout << "OPEN LIST SIZE: " << open_list_hash_table->get_list()->size() << std::endl;
 			std::cout << "CLOSED LIST SIZE: " << closed_list->get_list()->size() << std::endl;
-#endif 
+#endif
 			return;
 		}
 
@@ -276,7 +282,7 @@ void Agent::find_solution()
 	}
 
 	/* You should never run out of nodes in A* search */
-	throw TerminalException("Ran out of nodes to expand in A*.");
+	throw OutOfNodesException();
 }
 
 /* 
@@ -292,27 +298,38 @@ void Agent::get_successors(Position* pos, std::vector<Position>* successors)
 	
 	/* Get the new depth */
 	unsigned short depth = pos->get_depth() + 1;
-
-	/* Number of possible successors */
-	const int NUM_SUCCESSORS = 9;
-
+	
 	/* Create positions for each possible successor */
-	Position* possible_successors[NUM_SUCCESSORS];
-	possible_successors[0] = new Position(x_coord + 1, y_coord, depth);
-	possible_successors[1] = new Position(x_coord + 1, y_coord + 1, depth);
-	possible_successors[2] = new Position(x_coord + 1, y_coord - 1, depth);
-	possible_successors[3] = new Position(x_coord - 1, y_coord, depth);
-	possible_successors[4] = new Position(x_coord - 1, y_coord + 1, depth);
-	possible_successors[5] = new Position(x_coord - 1, y_coord - 1, depth);
-	possible_successors[6] = new Position(x_coord, y_coord, depth);
-	possible_successors[7] = new Position(x_coord, y_coord + 1, depth);
-	possible_successors[8] = new Position(x_coord, y_coord - 1, depth);
+	std::vector<Position*> possible_successors = std::vector<Position*>();
+	possible_successors.push_back(new Position(x_coord + 1, y_coord, depth));
+	possible_successors.push_back(new Position(x_coord + 1, y_coord + 1, depth));
+	possible_successors.push_back(new Position(x_coord, y_coord, depth));
+	possible_successors.push_back(new Position(x_coord, y_coord + 1, depth));
+
+	/* X coordinate must be positive */
+	if (x_coord > 0)
+	{
+		possible_successors.push_back(new Position(x_coord - 1, y_coord, depth));
+		possible_successors.push_back(new Position(x_coord - 1, y_coord + 1, depth));
+
+		/* Y coordinate must be positive */
+		if (y_coord > 0)
+			possible_successors.push_back(new Position(x_coord - 1, y_coord - 1, depth));
+	}
+
+	/* Y coordinate must be positive */
+	if (y_coord > 0)
+	{
+		possible_successors.push_back(new Position(x_coord + 1, y_coord - 1, depth));
+		possible_successors.push_back(new Position(x_coord, y_coord - 1, depth));
+	}
 
 	/* 
 	* Add each possible successor if it is an existing coordinate, 
 	* is not blocked by an obstacle and is not constrained.
 	*/
-	for (int i = 0; i < NUM_SUCCESSORS; i++)
+	int num_successors = possible_successors.size();
+	for (int i = 0; i < num_successors; i++)
 	{
 		if (
 			world->check_coord(possible_successors[i]->get_coord()) &&
@@ -322,7 +339,7 @@ void Agent::get_successors(Position* pos, std::vector<Position>* successors)
 	}
 
 	/* Delete all possible successors (pushed by to return list of successors by value) */
-	for (int i = 0; i < NUM_SUCCESSORS; i++)
+	for (int i = 0; i < num_successors; i++)
 		delete possible_successors[i];
 }
 
@@ -403,19 +420,19 @@ void Agent::file_print_solution(std::ofstream& file)
 	std::stack<Coord> path = get_solution();
 
 	/* Print the agent's name */
-	file << "*********************" << "\n";
-	file << name << "\n";
-	file << "*********************" << "\n";
+	file << "*********************" << "\r\n";
+	file << name << "\r\n";
+	file << "*********************" << "\r\n";
 
 	/* Make sure the solution is correct */
 	while (!path.empty())
 	{
-		file << path.top() << "\n";
+		file << path.top() << "\r\n";
 		path.pop();
 	}
 
 	/* Add an extra line for formatting */
-	file << "\n";
+	file << "\r\n";
 }
 
 /*
@@ -423,15 +440,15 @@ void Agent::file_print_solution(std::ofstream& file)
 * @param pos: The position to calculate the cost for
 * @return the total cost of the position
 */
-float Agent::calc_cost(Position* pos)
+double Agent::calc_cost(Position* pos)
 {
 	/* Distances between pos and goal in X and Y axes */
 	int x_diff = pos->get_coord()->get_xcoord() - goal->get_xcoord();
 	int y_diff = pos->get_coord()->get_ycoord() - goal->get_ycoord();
 
-	float heuristic = static_cast<float>(sqrt(pow(x_diff, 2) + pow(y_diff, 2)));
+	double heuristic = static_cast<double>(sqrt(pow(x_diff, 2) + pow(y_diff, 2)));
 
-	return heuristic + float(pos->get_depth());
+	return heuristic + static_cast<double>(pos->get_depth());
 }
 
 /* 
@@ -456,7 +473,6 @@ Agent::~Agent()
 	delete open_list_hash_table;
 	delete closed_list;
 	delete goal;
-	delete goal_node;
 	delete start_coord;
 
 #ifndef CBS_CLASSIC

@@ -2,6 +2,7 @@
 #define WORLD_H
 
 #include <string>
+#include <vector>
 
 class Coord;
 
@@ -15,10 +16,9 @@ public:
 	bool check_coord(Coord* coord);
 	/* Print the World to the console */
 	void print_world();
-	~World();
 private:
-	/* Boolean matrix where true means the space is open, false if it is blocked */
-	bool * coords;
+	/* Boolean vector where true means the space is open, false if it is blocked */
+	std::vector<bool> coords;
 	/* Maximum X coordinate of the matrix (starts at 0) */
 	unsigned short max_x;
 	/* Maximum Y coordinate of the matrix(starts at 0) */

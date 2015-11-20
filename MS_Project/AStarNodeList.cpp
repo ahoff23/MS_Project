@@ -148,6 +148,7 @@ void AStarNodeList::add_node(AStarNode* add_node)
 
 	/* Make sure the node is not already in the list */
 	AStarNode* found = list->find(add_node->get_pos());
+
 	if (found != NULL)
 		throw TerminalException("Pre-existing node added to AStarNodeList.");
 
@@ -191,7 +192,6 @@ int AStarNodeList::delete_node(Position* pos, Coord* parent_coord, bool del_mem)
 
 		return 2;
 	}
-
 	/* The node was found but not deleted */
 	return 1;
 }
@@ -245,6 +245,15 @@ void AStarNodeList::heap_place(std::priority_queue<AStarNode*, std::vector<AStar
 int AStarNodeList::get_size() const
 {
 	return list->size();
+}
+
+/*
+* Search the map as a linked list for a specific Position
+* @param pos: The position to search the list for
+*/
+AStarNode* AStarNodeList::search_node(Position* pos)
+{
+	return list->search_node(pos);
 }
 
 /*

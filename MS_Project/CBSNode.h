@@ -20,6 +20,8 @@ public:
 	/* Find a position in a hash table that allows some duplicates */
 	std::unordered_multimap<unsigned int, AgentPos*>::iterator
 		find_it(Position* pos, std::unordered_multimap<unsigned int, AgentPos*>* map);
+	/* Print the solution to the console */
+	void print_solution();
 
 	/* Operators */
 	CBSNode & operator=(CBSNode& rhs);

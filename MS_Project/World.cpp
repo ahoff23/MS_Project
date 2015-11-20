@@ -8,7 +8,7 @@
 World::World()
 {
 	/* Default values not possible values for error checking */
-	coords = NULL;
+	coords = std::vector<bool>();
 	max_x = 0;
 	max_y = 0;
 }
@@ -32,74 +32,65 @@ World::World(std::string txt_file)
 	/* ASCII value for carriage return */
 	const int CARRIAGE_RETURN = 13;
 
-	/* 
-	* Default values for max_x and max_y 
-	* NOTE: Since max_x and max_y are unsigned, this will actually cause an overflow.
-	*/
-	max_x = -1;
-	max_y = -1;
-
-	/* Set to true if at least one line read */
-	bool read_line = false;
+	/* Default values for max_x and max_y */
+	max_x = 0;
+	max_y = 0;
 
 	/* Read the file once to get max_x and max_y */
 	std::string line;
 	while (getline(world_file, line))
 	{
-		if (read_line == false)
-			read_line = true;
-
 		max_y++;
 
 		/* Line length if the first character is at index 0 */
-		unsigned short line_length = static_cast<unsigned short>(line.length()) - 1;
+		unsigned short line_length = static_cast<unsigned short>(line.length());
 
 		/* If the final character is a newline, '\n', decrement the line length to ignore it */
-		if (line[line_length] == CARRIAGE_RETURN)
+		if (line[line_length - 1] == CARRIAGE_RETURN)
 			line_length--;
 
 		if (max_x < line_length)
 			max_x = line_length;
 	}
-	world_file.close();
 
 	/* Make sure the world has at least one coordinate */
-	if (read_line == false)
+	if (max_x == 0 || max_y == 0)
 		throw TerminalException("World text file must have at least one coordinate.");
 
-	/* Number of x coordinates in each row and y coordinates in each column */
-	int x_count = max_x + 1;
-	int y_count = max_y + 1;
+	/* Initialize the vector of coordinates */
+	coords = std::vector<bool>();
 
-	/* Initialize the matrix of coordinates */
-	coords = new bool[x_count * y_count];
+	/* max_x and max_y should be decremented to signify the largest index for either */
+	max_x--;
+	max_y--;
 
 	/* Integer tracking which element of coords should be set next */
 	int coords_index = 0;
 
-	/* Read the file and create the matrix of coordinates */
-	world_file.open(txt_file.c_str());
-	if (!world_file.is_open())
-		throw TerminalException("World file could not be opened.");
+	/* Return to the beginning of the file */
+	world_file.clear();
+	world_file.seekg(0, std::ios::beg);
+	std::cout << "";
 
 	/* Check each row of the world in the file */
 	while (getline(world_file, line))
 	{
 		/* Length of the line */
-		int line_length = int(line.length());
+		unsigned short line_length = static_cast<unsigned short>(line.length());
 
 		/* Read each entry in the line (i is the column number) */
-		for (int i = 0; i < line_length; i++)
+		for (int i = 0; i < max_x + 1; i++)
 		{
+			/* Stop reading the line if at the end of the line */
+			if (i >= line_length || line.at(i) == CARRIAGE_RETURN)
+				break;
+
 			if (line.at(i) == '0')
-				coords[coords_index] = false;
+				coords.push_back(false);
 			else if (line.at(i) == '1')
-				coords[coords_index] = true;
-			else if (line.at(i) == CARRIAGE_RETURN)
-				continue;
+				coords.push_back(true);
 			else
 				throw TerminalException("Invalid file format.");
-			coords_index++;
 		}
 
 		/* 
@@ -109,14 +100,10 @@ World::World(std::string txt_file)
 		* worlds with variable sized rows.
 		*/
 		for (int i = line_length; i <= max_x; i++)
-		{
-			coords[coords_index] = false;
-			coords_index++;
-		}
+			coords.push_back(false);
 	}
 	world_file.close();
 }
-
 
 /* 
 * Check if a coordinate is open and that it exists 
@@ -133,7 +120,7 @@ bool World::check_coord(Coord* coord)
 	/* Check if the coordinate exists */
 	if (x_coord > max_x || y_coord > max_y || x_coord < 0 || y_coord < 0)
 		return false;
-
+	
 	/* Find the index of the coordinate in the coords matrix */
 	int index = y_coord * (max_x + 1) + x_coord;
 	
@@ -160,14 +147,9 @@ void World::print_world()
 		}
 
 		/* Print 1 for an open space, 0 for an obstacle */
-		coords[i] == 1 ? std::cout << 1 : std::cout << 0;
+		coords[i] == true ? std::cout << 1 : std::cout << 0;
 
 		x_coord++;
 	}
 	std::cout << std::endl;
-}
-
-World::~World()
-{
-	delete [] coords;
 }

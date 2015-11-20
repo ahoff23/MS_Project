@@ -10,6 +10,7 @@ MS_Project.v12.suo
 *.pdb
 *.tlog
 *.log
+*.txt
 *.lastbuildstate
 unsuccessfulbuild
 *.exe
@@ -18,4 +19,3 @@ unsuccessfulbuild
 *.stackdump
 *.out
 *.output
-*.txt

@@ -17,16 +17,16 @@ int main()
 {
 #ifdef NUM_GEN_TESTS
 	/* Number of probability of an element being an obstacle */
-	const float OBS_PROB = 0.5;
+	const float OBS_PROB = 0.35;
 
 	/* Number of rows */
 	const int NUM_ROWS = 20;
 
 	/* Number of columns */
-	const int NUM_COLS = 20;
+	const int NUM_COLS = 6;
 
 	/* Number of agents to generate */
-	const int AGENTS_PER_FILE = 10;
+	const int AGENTS_PER_FILE = 25;
 
 	TestGenerator test_gen = TestGenerator(NUM_GEN_TESTS,NUM_ROWS,NUM_COLS,AGENTS_PER_FILE);
 	test_gen.generate_files(OBS_PROB);
@@ -34,8 +34,8 @@ int main()
 
 #ifdef RUN_PROGRAM
 	/* Agent and world file names */
-	std::string agent_file = "Agents/testAgents8.txt";
-	std::string world_file = "Worlds/testWorld8.txt";
+	std::string agent_file = "Agents/testAgents6.txt";
+	std::string world_file = "Worlds/testWorld6.txt";
 
 	/* Tree variable */
 	CBSTree* tree;
@@ -45,6 +45,7 @@ int main()
 	{
 		tree = new CBSTree(agent_file, world_file);
 		tree->file_print_solution();
+		delete tree;
 	}
 	catch (TerminalException& ex)
 	{
@@ -54,17 +55,13 @@ int main()
 		/* Special Case: Time limit exceeded exception */
 		if (exception_msg == "TIME LIMIT EXCEEDED")
 		{
-			std::cout << "Test " << i << " failed." << std::endl;
-			output_file << "Test " << i << " failed. \r\n";
-			failures++;
+			std::cout << "Test failed." << std::endl;
+			std::cin.get();
 		}
 		/* Print the error message */
 		else
 			std::cout << exception_msg << std::endl;
-
-		continue;
-	}	
-	delete tree;
+	}
 #endif
 
 #ifdef TEST
@@ -95,12 +92,12 @@ int main()
 	/* Open the output file */
 	std::ofstream output_file("Output/avg_test_time.txt");
 
-	/* Loop through each test */
-	for (int i = 8; i < NUM_TESTS; i++)
-	{
-		if (i == 14)
-			continue;
+	/* Test cost */
+	int cost;
 
+	/* Loop through each test */
+	for (int i = 0; i < NUM_TESTS; i++)
+	{
 		/* Create the world and agent file */
 		std::string world_file = world_file_prefix + Utils::to_string(i) + suffix;
 		std::string agent_file = agent_file_prefix + Utils::to_string(i) + suffix;
@@ -116,6 +113,7 @@ int main()
 		{
 			tree = new CBSTree(agent_file, world_file);
 			CBSNode* sol = tree->get_solution();
+			cost = sol->get_cost();
 			delete sol;
 			delete tree;
 		}
@@ -138,6 +136,12 @@ int main()
 				output_file << "An agent in test " << i << " exceeded the max search depth.\r\n";
 				depth_exceeded++;
 			}
+			else if (exception_msg == "Ran out of CBS nodes.")
+			{
+				std::cout << "An agent in test " << i << " ran out of CBS nodes to expand." << std::endl;
+				output_file << "An agent in test " << i << " ran out of CBS nodes to expand.\r\n";
+				failures++;
+			}
 			/* Print the error message */
 			else
 				std::cout << exception_msg << std::endl;
@@ -147,20 +151,18 @@ int main()
 
 		/* Get the time it took to run the test */
 		output_file << "Test " << i << " took " << 
-			float(std::clock() - start) / CLOCKS_PER_SEC << " seconds to complete.\r\n";
+			float(std::clock() - start) / CLOCKS_PER_SEC << " seconds to complete and cost " <<
+			cost << " nodes.\r\n";
 		sum_time += float(std::clock() - start) / CLOCKS_PER_SEC;
 	}
 
 	/* Print the duration of the test in seconds */
 	output_file << "AVG TEST TIME: " << sum_time / (NUM_TESTS - failures) << " seconds.\r\n";
-	output_file << failures << " failures out of " << NUM_TESTS << " total tests." << std::endl;
+	output_file << failures << " failures out of " << NUM_TESTS << " total tests.\r\n";
 	output_file << depth_exceeded << " tests exceeded the max search depth out of " << 
 		NUM_TESTS << " total tests." << std::endl;
 	output_file.close();
 #endif
-	
-	for (int i = 0; i > -1; i++)
-		;
 
 	return 0;
 }

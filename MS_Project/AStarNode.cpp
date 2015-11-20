@@ -1,32 +1,14 @@
+#include <iostream>
+
 #include "AStarNode.h"
 #include "Exceptions.h"
 #include "HashStruct.h"
-
-
-int AStarNode::pub_count = 0;
-#include <iostream>
-
 
 /*
 * Default constructor
 */
 AStarNode::AStarNode()
 {
-
-	count = pub_count;
-	pub_count++;
-
-
-
-
-
-
-
-
-
-
-
-
 	/* Set the position as the default position */
 	Position* temp = new Position();
 	pos = *temp;
@@ -34,6 +16,8 @@ AStarNode::AStarNode()
 
 	/* No parent for this node */
 	parents = std::unordered_map<unsigned int, Coord>();
+	parents_ptr = &parents;
+	parents_copied = true;
 
 	/* 
 	* Default cost is -1 so the user can confirm this node has
@@ -53,17 +37,6 @@ AStarNode::AStarNode()
 */
 AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
 {
-
-	count = pub_count;
-	pub_count++;
-
-
-
-
-
-
-
-
 	/* Set the position equal to the parameter position */
 	pos = p_pos;
 
@@ -72,6 +45,8 @@ AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
 
 	/* Initialize the parent hash table */
 	parents = std::unordered_map<unsigned int, Coord>();
+	parents_ptr = &parents;
+	parents_copied = true;
 
 	/* Add the parent node */
 	if (p_parent != NULL)
@@ -90,18 +65,6 @@ AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
 */
 AStarNode::AStarNode(AStarNode* a_star_node)
 {
-
-	count = pub_count;
-	pub_count++;
-
-
-
-
-
-
-
-
-
 	/* Set the position equal to the parameter A* Node's position */
 	pos = *(a_star_node->get_pos());
 
@@ -109,10 +72,12 @@ AStarNode::AStarNode(AStarNode* a_star_node)
 	cost = a_star_node->get_cost();
 
 	/* Get parameter A* Node's parents */
-	parents = *a_star_node->get_parents();
+	parents = std::unordered_map<unsigned int, Coord>();
+	parents_ptr = a_star_node->get_parents();
+	parents_copied = false;
 
 	/* Not marked for deletion by default */
-	del_mark = false;
+	del_mark = a_star_node->del_mark;
 }
 
 /*
@@ -121,9 +86,9 @@ AStarNode::AStarNode(AStarNode* a_star_node)
 */
 Coord* AStarNode::get_parent()
 { 
-	if (parents.size() == 0)
+	if (parents_ptr->size() == 0)
 		return NULL;
-	return &parents.begin()->second;
+	return &parents_ptr->begin()->second;
 }
 
 /*
@@ -132,6 +97,13 @@ Coord* AStarNode::get_parent()
 */
 void AStarNode::add_parent(AStarNode* parent)
 {
+	/* Parent list being altered, copy-on-write */
+	if (parents_copied == false)
+	{
+		copy_parents();
+		parents_copied = true;
+	}
+
 	/* Get the Coord of the parent */
 	Coord parent_coord = parent->get_pos()->get_coord();
 
@@ -144,7 +116,7 @@ void AStarNode::add_parent(AStarNode* parent)
 		parents.emplace(HashStruct::hash_coord(&parent_coord), parent_coord);
 		return;
 	}
-		
+
 	/* Parent was already in the table, an error must have occurred */
 	throw TerminalException("Added pre-existing parent to parent list of an A* Node");
 }
@@ -155,6 +127,13 @@ void AStarNode::add_parent(AStarNode* parent)
 */
 void AStarNode::del_parent(Coord* parent)
 {
+	/* Parent list being altered, copy-on-write */
+	if (parents_copied == false)
+	{
+		copy_parents();
+		parents_copied = true;
+	}
+
 	/* Find the parent iterator */
 	auto parent_it = parents.find(HashStruct::hash_coord(parent));
 
@@ -171,7 +150,32 @@ void AStarNode::del_parent(Coord* parent)
 */
 bool AStarNode::operator<(const AStarNode& comp) const
 {
-	return cost < comp.cost;
+	/* First compare by cost*/
+	if (cost > comp.cost)
+		return false;
+	else if (cost < comp.cost)
+		return true;
+
+	/* Compare by x coordinate */
+	if (pos.get_x_coord() > comp.pos.get_x_coord())
+		return false;
+	else if (pos.get_x_coord() < comp.pos.get_x_coord())
+		return true;
+
+	/* Compare by y coordinate */
+	if (pos.get_y_coord() > comp.pos.get_y_coord())
+		return false;
+	else if (pos.get_y_coord() < comp.pos.get_y_coord())
+		return true;
+
+	/* Compare by depth */
+	if (pos.get_depth() > comp.pos.get_depth())
+		return false;
+	else if (pos.get_depth() < comp.pos.get_depth())
+		return true;
+
+	/* If all of the above are equal, the nodes are the same */
+	throw TerminalException("Equal nodes compared in priority queue.");
 }
 
 /*
@@ -179,13 +183,50 @@ bool AStarNode::operator<(const AStarNode& comp) const
 */
 bool AStarNode::operator>(const AStarNode& comp) const
 {
-	return cost > comp.cost;
+	/* First compare by cost*/
+	if (cost > comp.cost)
+		return true;
+	else if (cost < comp.cost)
+		return false;
+
+	/* Compare by x coordinate */
+	if (pos.get_x_coord() > comp.pos.get_x_coord())
+		return true;
+	else if (pos.get_x_coord() < comp.pos.get_x_coord())
+		return false;
+
+	/* Compare by y coordinate */
+	if (pos.get_y_coord() > comp.pos.get_y_coord())
+		return true;
+	else if (pos.get_y_coord() < comp.pos.get_y_coord())
+		return false;
+
+	/* Compare by depth */
+	if (pos.get_depth() > comp.pos.get_depth())
+		return true;
+	else if (pos.get_depth() < comp.pos.get_depth())
+		return false;
+
+	return false;
 }
 
 /* Print parents */
 void AStarNode::print_parents()
 {
 	std::cout << "PARENTS: " << std::endl;
-	for (auto it = parents.begin(); it != parents.end(); it++)
+	for (auto it = parents_ptr->begin(); it != parents_ptr->end(); it++)
 		std::cout << it->second << std::endl;
+}
+
+/*
+* Copy the parents list if it is written to
+*/
+void AStarNode::copy_parents()
+{
+	/* Copy list of parents to this list of parents and update pointer */
+	parents = *parents_ptr;
+	parents_ptr = &parents;
+
+	/* Update variable to reflect that copy occurred */
+	parents_copied = true;
 }
