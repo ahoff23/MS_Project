@@ -38,7 +38,7 @@ TestGenerator::TestGenerator(
 * Generate world files 
 * @param obs_prob: Probability that an individual coordinate is an obstacle
 */
-void TestGenerator::generate_files(float obs_prob)
+void TestGenerator::generate_files(double obs_prob)
 {
 	/* Suffix of each test file */
 	std::string suffix = ".txt";
@@ -70,7 +70,7 @@ void TestGenerator::generate_files(float obs_prob)
 			for (int k = 0; k < num_cols; k++)
 			{
 				/* Determine if the next element is an obstacle or open space */
-				float obs_val = float(rand() % 10 + 1) / 10;
+				double obs_val = static_cast<double>(rand() % 10 + 1) / 10;
 
 				/* Write the element to the row */
 				if (obs_val < obs_prob)

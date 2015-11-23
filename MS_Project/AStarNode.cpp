@@ -15,9 +15,7 @@ AStarNode::AStarNode()
 	delete temp;
 
 	/* No parent for this node */
-	parents = std::unordered_map<unsigned int, Coord>();
-	parents_ptr = &parents;
-	parents_copied = true;
+	parents = 0;
 
 	/* 
 	* Default cost is -1 so the user can confirm this node has
@@ -35,25 +33,22 @@ AStarNode::AStarNode()
 * @param p_parent: Parent of this node, NULL if no parent exists
 * @param p_cost: The cost of the node
 */
-AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
+AStarNode::AStarNode(Position* p_pos, AStarNode* p_parent, double p_cost)
 {
 	/* Set the position equal to the parameter position */
-	pos = p_pos;
+	pos = *p_pos;
 
 	/* Set the cost of the node */
 	cost = p_cost;
 
-	/* Initialize the parent hash table */
-	parents = std::unordered_map<unsigned int, Coord>();
-	parents_ptr = &parents;
-	parents_copied = true;
-
 	/* Add the parent node */
 	if (p_parent != NULL)
 	{
-		Coord parent_coord = *p_parent->get_pos()->get_coord();
-		parents.emplace(HashStruct::hash_coord(&parent_coord),parent_coord);
+		parents =
+			HashStruct::hash_coord_comp(p_parent->get_pos()->get_coord(), p_pos->get_coord());
 	}
+	else
+		parents = 0;
 	
 	/* Not marked for deletion by default */
 	del_mark = false;
@@ -63,6 +58,7 @@ AStarNode::AStarNode(Position p_pos, AStarNode* p_parent, float p_cost)
 * Constructor to create an AStarNode from another AStarNode
 * @param a_star_node: The A* Node on which this A* Node will be based
 */
+#include <bitset>
 AStarNode::AStarNode(AStarNode* a_star_node)
 {
 	/* Set the position equal to the parameter A* Node's position */
@@ -72,9 +68,7 @@ AStarNode::AStarNode(AStarNode* a_star_node)
 	cost = a_star_node->get_cost();
 
 	/* Get parameter A* Node's parents */
-	parents = std::unordered_map<unsigned int, Coord>();
-	parents_ptr = a_star_node->get_parents();
-	parents_copied = false;
+	parents = a_star_node->get_parents();
 
 	/* Not marked for deletion by default */
 	del_mark = a_star_node->del_mark;
@@ -84,11 +78,19 @@ AStarNode::AStarNode(AStarNode* a_star_node)
 * Get the first parent coordinate of this position
 * @return the first parent Coord in the hash table of parents
 */
-Coord* AStarNode::get_parent()
+Coord AStarNode::get_parent()
 { 
-	if (parents_ptr->size() == 0)
-		return NULL;
-	return &parents_ptr->begin()->second;
+	/* Throw an error if no parent is found. */
+	if (parents == 0)
+		throw TerminalException("No parent found for a node.");
+
+	/* Find the first bit that is a 1 in the parents bitmap */
+	unsigned short comp = 1;
+	while ((comp & parents) == 0)
+		comp = comp << 1;
+
+	/* Convert that bit back to a coordinate */
+	return HashStruct::hash_to_coord(comp,pos.get_coord());
 }
 
 /*
@@ -97,52 +99,37 @@ Coord* AStarNode::get_parent()
 */
 void AStarNode::add_parent(AStarNode* parent)
 {
-	/* Parent list being altered, copy-on-write */
-	if (parents_copied == false)
-	{
-		copy_parents();
-		parents_copied = true;
-	}
+	/* Get the hash of the coordinate */
+	unsigned short hash = 
+		HashStruct::hash_coord_comp(parent->get_pos()->get_coord(), pos.get_coord());
 
-	/* Get the Coord of the parent */
-	Coord parent_coord = parent->get_pos()->get_coord();
+	/* Make sure the parent is not already in the bitmap */
+	if ((parents & hash) != 0)
+		throw TerminalException("Added pre-existing parent to parent list of an A* Node");
 
-	/* Check if the parent is in the table */
-	auto it = parents.find(HashStruct::hash_coord(&parent_coord));
-
-	/* Place the parent in the hash table if it is not already there */
-	if (it == parents.end())
-	{
-		parents.emplace(HashStruct::hash_coord(&parent_coord), parent_coord);
-		return;
-	}
-
-	/* Parent was already in the table, an error must have occurred */
-	throw TerminalException("Added pre-existing parent to parent list of an A* Node");
+	/* Update the parents bitmap */
+	parents |= hash;
 }
 
 /*
 * Remove a parent node from the list of parents
 * @param parent: The coordinate of the parent node to remove
+* @return the parent bitmap
 */
-void AStarNode::del_parent(Coord* parent)
+unsigned short AStarNode::del_parent(Coord* parent)
 {
-	/* Parent list being altered, copy-on-write */
-	if (parents_copied == false)
-	{
-		copy_parents();
-		parents_copied = true;
-	}
-
-	/* Find the parent iterator */
-	auto parent_it = parents.find(HashStruct::hash_coord(parent));
+	/* Get the hash of the coordinate */
+	unsigned short hash =
+		HashStruct::hash_coord_comp(parent, pos.get_coord());
 
 	/* Make sure the node exists */
-	if (parent_it == parents.end())
+	if ((hash & parents) == 0)
 		throw TerminalException("Tried to decrement a non-existant parent node.");
 
 	/* Remove the parent from the list */
-	parents.erase(parent_it);
+	parents &= ~hash;
+
+	return parents;
 }
 
 /*
@@ -210,23 +197,46 @@ bool AStarNode::operator>(const AStarNode& comp) const
 	return false;
 }
 
-/* Print parents */
+/*
+* Print parents 
+*/
 void AStarNode::print_parents()
 {
-	std::cout << "PARENTS: " << std::endl;
-	for (auto it = parents_ptr->begin(); it != parents_ptr->end(); it++)
-		std::cout << it->second << std::endl;
+	/* Number of possible parenst */
+	const unsigned short NUM_PARENTS = 9;
+
+	/* Value to get the correct bit from the parents bitmap */
+	int bit_trav = 1;
+
+	for (int i = 0; i < NUM_PARENTS; i++)
+	{
+		Coord print_coord = HashStruct::hash_to_coord(bit_trav, pos.get_coord());
+		if ((parents & bit_trav) != 0)
+			std::cout << print_coord << std::endl;
+		bit_trav = bit_trav << 1;
+	}
 }
 
-/*
-* Copy the parents list if it is written to
+/* 
+* Check if a parent is in the list of parents 
+* @param parent: The parent to check for
+* @return true if the parent is found, false otherwise
 */
-void AStarNode::copy_parents()
+bool AStarNode::check_parent(Coord* parent)
 {
-	/* Copy list of parents to this list of parents and update pointer */
-	parents = *parents_ptr;
-	parents_ptr = &parents;
+	/* Get the hash for the parent */
+	unsigned short hash = HashStruct::hash_coord_comp(parent, pos.get_coord());
 
-	/* Update variable to reflect that copy occurred */
-	parents_copied = true;
+	/* No parents in bitmap */
+	if (parent == NULL)
+	{
+		if (hash != 0)
+			return false;
+		return true;
+	}
+
+	/* Compare the hash to the list of parents */
+	if ((hash & parents) == 0)
+		return false;
+	return true;
 }

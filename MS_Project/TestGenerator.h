@@ -11,7 +11,7 @@ public:
 	/* Constructor: Set the number of tests to generate */
 	TestGenerator(int p_test_count, unsigned short  p_num_rows, unsigned short p_num_cols, unsigned short p_num_agents);
 	/* Genearte world files */
-	void generate_files(float obs_prob);
+	void generate_files(double obs_prob);
 private:
 	/* Number of tests to generate */
 	int test_count;

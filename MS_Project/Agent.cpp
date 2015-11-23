@@ -43,13 +43,13 @@ Agent::Agent(Coord* p_start, Coord* p_goal, World* p_world, std::string p_name)
 
 	/* Initialize lists and hash tables */
 	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
-	open_list_hash_table = new AStarNodeList(NULL);
-	closed_list = new AStarNodeList(NULL);
+	open_list_hash_table = new AStarNodeList();
+	closed_list = new AStarNodeList();
 	constraints = std::unordered_map<unsigned int, Position>();
 
 	/* Place the root into the OPEN list */
 	Position start_pos = Position(p_start, 0);
-	AStarNode* start_node = new AStarNode(start_pos, NULL, calc_cost(&start_pos));
+	AStarNode* start_node = new AStarNode(&start_pos, NULL, calc_cost(&start_pos));
 	open_list.emplace(start_node);
 	open_list_hash_table->add_node(start_node);
 
@@ -98,7 +98,7 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 
 	/* Initalize open and closed list hash tables */
 	open_list_hash_table = new AStarNodeList();
-	closed_list = new AStarNodeList(NULL);
+	closed_list = new AStarNodeList();
 
 	/* Copy the constraints and add the new constraint */
 	constraints = *(p_agent->get_constraints());
@@ -110,7 +110,7 @@ Agent::Agent(Agent* p_agent, Position* new_constraint)
 
 	/* Put the start node in the OPEN list */
 	Position start_pos = Position(p_agent->get_start(), 0);
-	AStarNode* start_node = new AStarNode(start_pos, NULL, calc_cost(&start_pos));
+	AStarNode* start_node = new AStarNode(&start_pos, NULL, calc_cost(&start_pos));
 	open_list.emplace(start_node);
 	open_list_hash_table->add_node(start_node);
 #else
@@ -163,7 +163,7 @@ void Agent::find_solution()
 	/* Create a variable for the number of nodes added to the OPEN list */
 	int added = 0;
 #endif
-
+	
 	while (!open_list.empty())
 	{
 #ifdef TIME_LIMIT
@@ -200,12 +200,7 @@ void Agent::find_solution()
 		
 		/* Make sure the node has not been removed from the list by PCA* */
 		if (top == NULL || top != heap_top)
-		{
-			std::cout << "POS: "<< *heap_top->get_pos() << std::endl;
-			std::cout << "GOAL: " << *goal << std::endl;
-			std::cin.get();
 			throw TerminalException("Could not find node from heap in hash table.");
-		}
 
 		/* Check if the node is a solution, if it is, return it */
 		if (*top->get_pos()->get_coord() == *goal)
@@ -214,9 +209,6 @@ void Agent::find_solution()
 
 			/* Place the goal node back into the OPEN list (it will be removed by PCA*) */
 			open_list.push(top);
-
-			/* Remove the node from the OPEN list without deleting the node */
-//			open_list_hash_table->remove_hash(top);
 
 #ifdef A_STAR_SEARCH_DATA
 			std::cout << "END OF SEARCH" << std::endl;
@@ -257,7 +249,7 @@ void Agent::find_solution()
 			{
 				/* Create a new node and add it to the OPEN list (both heap and hash table) */
 				AStarNode* add_node = 
-					new AStarNode(successors[i], top, calc_cost(&successors[i]));
+					new AStarNode(&successors[i], top, calc_cost(&successors[i]));
 
 				/* Add node to the hash table and minheap */
 				open_list_hash_table->add_node(add_node);
@@ -364,18 +356,18 @@ std::stack<Coord> Agent::get_solution()
 	unsigned short depth = goal_node->get_pos()->get_depth();
 
 	/* Create a node pointer to traverse the nodes parents */
-	Coord* parent_coord = goal_node->get_parent();
+	Coord parent_coord = goal_node->get_parent();
 	
-	while (parent_coord != NULL)
+	while (true)
 	{
 		/* Place the coordinate on the list */
-		path.push(*parent_coord);
+		path.push(parent_coord);
 
 		/* Update the cost of the parent coordinate (search backwards) */
 		depth--;
 
 		/* Construct a Position for the current coordinate */
-		Position pos = Position(*parent_coord, depth);
+		Position pos = Position(parent_coord, depth);
 
 		/* Find the current node */
 		AStarNode* curr_node = closed_list->check_duplicate(&pos);
@@ -384,7 +376,11 @@ std::stack<Coord> Agent::get_solution()
 			throw TerminalException("Parent node in path search not found in CLOSED list.");
 
 		/* Get the parent coordinate */
-		parent_coord = curr_node->get_parent();
+		if (curr_node->get_parent_bitmap() == 0)
+			break;
+
+		Coord temp_coord = curr_node->get_parent();
+		parent_coord = temp_coord;
 	}
 	return path;
 }

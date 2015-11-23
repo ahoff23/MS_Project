@@ -71,6 +71,14 @@ std::unordered_multimap<unsigned int, AStarNode*>::iterator
 	std::unordered_multimap<unsigned int, AStarNode*>::iterator it =
 		map.find(HashStruct::hash_pos(pos));
 
+
+
+//	Position check = Position(0, 5, 5);
+
+
+
+
+
 	/* If no node contains this key, return a NULL pointer */
 	if (it == map.end())
 		return map.end();
@@ -84,6 +92,15 @@ std::unordered_multimap<unsigned int, AStarNode*>::iterator
 		/* Compare coordinates and depth */
 		if (*pos == *it->second->get_pos())
 			return it;
+
+
+
+		/*
+		if (*pos == check)
+			std::cout << "FAIL POS: " << *it->second->get_pos() << std::endl;
+*/
+
+
 
 		/* Move to the next element */
 		it++;
@@ -127,7 +144,7 @@ void AStarNodeMultiMap::print_map()
 {
 	std::cout << "LIST CONTENTS: " << std::endl;
 	for (auto it = map.begin(); it != map.end(); it++)
-		std::cout << it->second->get_pos() << std::endl;
+		std::cout << *it->second->get_pos() << std::endl;
 }
 
 /*

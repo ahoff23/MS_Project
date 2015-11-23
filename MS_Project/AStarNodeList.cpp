@@ -13,21 +13,6 @@
 AStarNodeList::AStarNodeList()
 {
 	list = new AStarNodeMultiMap();
-	parent = NULL;
-}
-
-/*
-* Constructor with a parent as a parameter
-* @param p_parent: A pointer to the parent list that allows this list
-* to reuse the positions on the parent list i.e. the ancestor lists
-* of this lists are considered extensions of this list. This way, when
-* checking for a duplicate, this list and all of its ancestors will be
-* checked.
-*/
-AStarNodeList::AStarNodeList(AStarNodeList* p_parent)
-{
-	list = new AStarNodeMultiMap();
-	parent = p_parent;
 }
 
 /* 
@@ -37,22 +22,22 @@ AStarNodeList::AStarNodeList(AStarNodeList* p_parent)
 */
 AStarNode* AStarNodeList::check_duplicate(AStarNode* node)
 {
-	/* Make sure a node is passed */
+	/* Make sure a node is passed as a parameter */
 	if (node == NULL)
-		return NULL;
-
-	/* Get the node's parent */
-	Coord* parent = node->get_parent();
+		throw TerminalException("Invalid node passed to check_duplicate().");
 
 	/* A* Node found in the list */
 	AStarNode* found;
 
 	/* Having no parent means that the position must exist somewhere in the list */
-	if (parent == NULL)
+	if (node->get_parent_bitmap() == 0)
 		found = check_duplicate(node->get_pos(), NULL);
 	/* Check for a duplicate with a parent */
 	else
-		found = check_duplicate(node->get_pos(), parent);
+	{
+		Coord parent_coord = node->get_parent();
+		found = check_duplicate(node->get_pos(), &parent_coord);
+	}
 
 	/* Make sure the returned node is the SAME node pointed to by the A* Node parameter */
 	if (found == NULL || node == found)
@@ -78,39 +63,10 @@ AStarNode* AStarNodeList::check_duplicate(Position* pos, Coord* parent_coord)
 	/* Find the node in the list based on the position only */
 	AStarNode* found = list->find(pos);
 
-	/* If the node is found search for its parent */
-	if (found != NULL)
-	{
-		/* Get the node's list of parents */
-		std::unordered_map<unsigned int, Coord>* parents = found->get_parents();
-
-		/* If there is no parent, make sure the parent list's size is zero and return the node */
-		if (parent_coord == NULL)
-		{
-			if (parents->size() == 0)
-				return found;
-
-			/* If the list has parents, throw an error */
-			throw TerminalException("Node searched for without a parent has parents.");
-		}
-
-		/* Search for the parent coordinate in the list of parents */
-		auto it = parents->find(HashStruct::hash_coord(parent_coord));
-
-		/* Parent was not found */
-		if (it == parents->end())
-			return NULL;
-
-		/* Parent was found*/
-		return found;
-	}
-
-	/* If this list has no parent, the node is not a duplicate */
-	if (parent == NULL)
+	/* Check the node for the parent */
+	if (found->check_parent(parent_coord) == false)
 		return NULL;
-
-	/* Recursively check all parents of this list */
-	return parent->check_duplicate(pos, parent_coord);
+	return found;
 }
 
 /*
@@ -122,18 +78,7 @@ AStarNode* AStarNodeList::check_duplicate(Position* pos, Coord* parent_coord)
 AStarNode* AStarNodeList::check_duplicate(Position* pos)
 {
 	/* Find the node in the list based on the position only */
-	AStarNode* found = list->find(pos);
-
-	/* Return NULL if the node is not found */
-	if (found != NULL)
-		return found;
-
-	/* If this list has no parent, the node is not a duplicate */
-	if (parent == NULL)
-		return NULL;
-
-	/* Recursively check all parents of this list */
-	return parent->check_duplicate(pos);
+	return list->find(pos);
 }
 
 /* 
@@ -174,21 +119,40 @@ int AStarNodeList::delete_node(Position* pos, Coord* parent_coord, bool del_mem)
 	/* Make sure the node exists */
 	if (found == NULL)
 		return 0;
-	
-	/* Decrement the parent */
-	found->del_parent(parent_coord);
 
 	/* If the node has no more parents after the deletion of this parent */
-	if (found->get_parents()->size() == 0)
+	if (found->del_parent(parent_coord) == 0)
 	{
+
+
+	/*	Position check = Position(0, 5, 5);
+		if (check == *pos)
+		{
+			std::cout << "PRE DELETION" << std::endl;
+			print_list();
+		}*/
+
+
+		/* remove it from the list */
+		list->erase(pos);
+
+
+
 		/* Delete the node pointed to by the list or mark it for deletion */
 		if (del_mem == true)
 			delete found;
 		else
 			found->mark_for_deletion();
 
-		/* remove it from the list */
-		list->erase(pos);
+	
+		/*
+		if (check == *pos)
+		{
+			std::cout << "POST DELETION" << std::endl;
+			print_list();
+		}
+		*/
+
 
 		return 2;
 	}
@@ -254,6 +218,14 @@ int AStarNodeList::get_size() const
 AStarNode* AStarNodeList::search_node(Position* pos)
 {
 	return list->search_node(pos);
+}
+
+/*
+* Print the list 
+*/
+void AStarNodeList::print_list() 
+{ 
+	list->print_map(); 
 }
 
 /*

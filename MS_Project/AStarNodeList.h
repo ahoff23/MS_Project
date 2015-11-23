@@ -20,7 +20,6 @@ class AStarNodeList
 public:
 	/* Constructors */
 	AStarNodeList();
-	AStarNodeList(AStarNodeList* p_parent);
 
 	/* Check if a node is in the list */
 	AStarNode* check_duplicate(AStarNode* node);
@@ -44,10 +43,11 @@ public:
 	void heap_place(std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >* heap);
 	/* Search the map as a linked list for a specific Position */
 	AStarNode* search_node(Position* pos);
+	/* Print the list */
+	void print_list();
 
 	/* Accessors */
 	AStarNodeMultiMap* get_list() { return list; };
-	AStarNodeList* get_parent() const { return parent; };
 	int get_size() const;
 
 	/* Destructor */
@@ -55,8 +55,6 @@ public:
 private:
 	/* Hash table of all positions in this iteration of A* search */
 	AStarNodeMultiMap* list;
-	/* Pointer to the parent ClosedList to avoid redundancy */
-	AStarNodeList* parent;
 };
 
 

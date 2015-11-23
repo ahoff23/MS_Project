@@ -52,7 +52,7 @@ private:
 	std::string name;
 
 	/* Calculate the cost of a position */
-	float calc_cost(Position* pos);
+	double calc_cost(Position* pos);
 	/* Get a vector of successor positions of a given position */
 	void get_successors(Position* pos, std::vector<Position>* successors);
 	/* Remove nodes from the OPEN list that were missed due a slightly different ordering */

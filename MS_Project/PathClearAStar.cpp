@@ -36,14 +36,14 @@ PathClearAStar::PathClearAStar(Agent* search, Position* start_pos)
 	open_list = std::priority_queue<AStarNode*, std::vector<AStarNode*>, std::greater<AStarNode> >();
 
 	/* OPEN list in the form of a hash table */
-	open_list_hash_table = new AStarNodeList(NULL);
+	open_list_hash_table = new AStarNodeList();
 
 	/* Place the root on the OPEN list */
-	AStarNode* root = new AStarNode(*start_pos, NULL, calc_cost(start_pos));
+	AStarNode* root = new AStarNode(start_pos, NULL, calc_cost(start_pos));
 	open_list.emplace(root);
 
 	/* CLOSED list for the search in the form of a hash table */
-	closed_list = new AStarNodeList(NULL);
+	closed_list = new AStarNodeList();
 
 	/*
 	* Hash table for the conflicts at this node. The key is the cantor pair of the Position
@@ -119,10 +119,7 @@ bool PathClearAStar::path_clear_a_star()
 		int len = successors.size();
 		for (int i = 0; i < len; i++)
 		{
-
-
 	//		std::cout << *successors[i].get_coord() << " with cost " << calc_cost(&successors[i]) << std::endl;
-
 
 			/*
 			* Remove the node from the OPEN or CLOSED list of the parent.
@@ -132,7 +129,7 @@ bool PathClearAStar::path_clear_a_star()
 				continue;
 
 			/* Create a new node and add it to the OPEN list (both heap and hash table) */
-			AStarNode* add_node = new AStarNode(successors[i], top, calc_cost(&successors[i]));
+			AStarNode* add_node = new AStarNode(&successors[i], top, calc_cost(&successors[i]));
 			open_list.push(add_node);
 			open_list_hash_table->add_node(add_node);
 		}
@@ -225,14 +222,6 @@ bool PathClearAStar::del_successors(Position* pos, Coord* parent)
 	/* If the node cannot be found in either A* list, throw an error */
 	if (closed_result == 0)
 	{
-
-
-		std::cout << "POS: " << *pos << std::endl;
-		std::cout << "PARENT: " << *parent << std::endl;
-		std::cout << "GOAL: " << *goal << std::endl;
-		std::cin.get();
-
-
 		throw TerminalException(
 			"Attempted to delete node in neither A* list."
 			);
@@ -251,15 +240,15 @@ bool PathClearAStar::del_successors(Position* pos, Coord* parent)
 * @param pos: The position to calculate the cost for
 * @return the total cost of the position
 */
-float PathClearAStar::calc_cost(Position* pos)
+double PathClearAStar::calc_cost(Position* pos)
 {
 	/* Distances between pos and goal in X and Y axes */
 	int x_diff = pos->get_coord()->get_xcoord() - goal->get_xcoord();
 	int y_diff = pos->get_coord()->get_ycoord() - goal->get_ycoord();
 
-	float heuristic = static_cast<float>(sqrt(pow(x_diff, 2) + pow(y_diff, 2)));
+	double heuristic = static_cast<double>(sqrt(pow(x_diff, 2) + pow(y_diff, 2)));
 
-	return heuristic + float(pos->get_depth());
+	return heuristic + double(pos->get_depth());
 }
 
 
@@ -288,7 +277,7 @@ void PathClearAStar::remove_extra_open_nodes()
 		std::vector<Position> successors;
 		get_successors(check_pos, &successors);
 
-		for (int i = 0; i < successors.size(); i++)
+		for (unsigned short i = 0; i < successors.size(); i++)
 			dec_push_unexpanded(&successors[i], check_pos->get_coord(), &unexpanded);
 	}
 
@@ -306,7 +295,7 @@ void PathClearAStar::remove_extra_open_nodes()
 		std::vector<Position> successors;
 		get_successors(&check_pos, &successors);
 
-		for (int i = 0; i < successors.size(); i++)
+		for (unsigned short i = 0; i < successors.size(); i++)
 			dec_push_unexpanded(&successors[i], check_pos.get_coord(), &unexpanded);
 	}
 }

@@ -14,8 +14,11 @@
 * The number chosen for the second variable (NUM_TESTS) equals the number
 * of tests you want to run.
 */
-#define NUM_GEN_TESTS 100
+//#define NUM_GEN_TESTS 100
 #define NUM_TESTS 100
+
+/* Number of times you run each test */
+#define TEST_RUN_COUNT 5
 
 /* Uncomment if test should stop after a set period of time (value in seconds) */
 #define TIME_LIMIT 60
@@ -40,8 +43,14 @@
 /* Uncomment this if you wish to display conflict data */
 //#define CONFLICT_DATA 1
 
+/*
+* Uncomment this if you wish to display data on the time 
+* it takes to complete conflict corrections 
+*/
+//#define CONFLICT_CORRECTION_TIME 1
+
 /* Uncomment if the search should not use PCA* and use the classic CBS algorithm */
-#define CBS_CLASSIC 1
+//#define CBS_CLASSIC 1
 
 /* Set the deth search limit */
 #define SEARCH_DEPTH 30000
